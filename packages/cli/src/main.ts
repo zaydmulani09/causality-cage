@@ -1,14 +1,21 @@
+import { UsageError } from './args.ts';
 import { doctor } from './doctor.ts';
+import { record } from './record.ts';
+import { verify } from './verify.ts';
 
 const HELP = `cage: counterfactual minimization for browser bugs
 
 Commands:
   doctor        check Node, Playwright and Chromium
+  record        record one run of a flow as a session
+  verify        replay a session N times, check it is deterministic
 
 Run \`cage <command> --help\` for options and examples.`;
 
 const commands: Record<string, (argv: string[]) => Promise<number>> = {
   doctor,
+  record,
+  verify,
 };
 
 async function main(): Promise<number> {
@@ -28,6 +35,10 @@ async function main(): Promise<number> {
 main().then(
   (code) => process.exit(code),
   (err: unknown) => {
+    if (err instanceof UsageError) {
+      console.error(`cage: ${err.message}`);
+      process.exit(1);
+    }
     const debug = process.argv.includes('--debug');
     console.error(`cage: ${err instanceof Error ? err.message : String(err)}`);
     if (debug && err instanceof Error) console.error(err.stack);
