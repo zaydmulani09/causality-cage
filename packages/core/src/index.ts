@@ -12,3 +12,7 @@ export * from './stats.ts';
 export * from './lab.ts';
 export * from './explain.ts';
 export * from './sentence.ts';
+export * from './redact.ts';
+export * from './schema.ts';
+export * from './export.ts';
+export * from './bundle.ts';

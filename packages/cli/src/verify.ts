@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
-import { applyConfig, buildOracle, extractFactors, loadFlow, makeReplayer, runFlow, type Factor, type Session } from '@causality-cage/core';
-import { int, UsageError, need, ORACLE_HELP, ORACLE_OPTIONS, oracleSpec, parse, readJson } from './args.ts';
+import { applyConfig, buildOracle, extractFactors, loadFlow, makeReplayer, runFlow, selectConfig, type Session } from '@causality-cage/core';
+import { int, need, ORACLE_HELP, ORACLE_OPTIONS, oracleSpec, parse, readJson } from './args.ts';
 
 const HELP = `cage verify <flow> --session <session.json> [options]
 
@@ -31,7 +31,7 @@ export async function verify(argv: string[]): Promise<number> {
   const baseURL = a.values['base-url'] ?? session.baseURL;
   const good = a.values.good ? await readJson<Session>(a.values.good, 'good session') : session;
   const ex = extractFactors(session, good);
-  const on = selectConfig(ex.factors, a.values.set ?? []);
+  const on = selectConfig(ex.factors, ex.factors.map((f) => f.id), a.values.set ?? []);
   if (a.values.good && !a.values.json) {
     console.log(`${ex.factors.length} factors (${on.length} observed):`);
     for (const f of ex.factors) console.log(`  ${on.includes(f.id) ? '[x]' : '[ ]'} ${f.id} ${f.label}`);
@@ -71,19 +71,3 @@ export async function verify(argv: string[]): Promise<number> {
   return report.outcomeConsistency === 1 && report.seqConsistency === 1 ? 0 : 1;
 }
 
-/** Start all-observed; apply --set entries in order. */
-export function selectConfig(factors: Factor[], sets: string[]): string[] {
-  const on = new Set(factors.map((f) => f.id));
-  for (const s of sets) {
-    const i = s.lastIndexOf('=');
-    const [name, v] = [s.slice(0, i), s.slice(i + 1)];
-    if (v !== 'observed' && v !== 'neutral') throw new UsageError(`--set ${s}: value must be observed or neutral`);
-    const hit = name === 'all' ? factors : factors.filter((f) => f.id === name || f.label === name);
-    if (!hit.length) throw new UsageError(`--set ${s}: no factor with id or label "${name}" (pass --good to get factors)`);
-    for (const f of hit) {
-      if (v === 'observed') on.add(f.id);
-      else on.delete(f.id);
-    }
-  }
-  return factors.filter((f) => on.has(f.id)).map((f) => f.id);
-}

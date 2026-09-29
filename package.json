@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@11.3.0",
   "engines": {
-    "node": ">=20.10"
+    "node": ">=20.16"
   },
   "scripts": {
     "check": "pnpm lint && pnpm typecheck && pnpm test",

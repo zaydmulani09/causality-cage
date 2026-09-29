@@ -4,6 +4,7 @@ import { record } from './record.ts';
 import { verify } from './verify.ts';
 import { explainCmd } from './explain.ts';
 import { bench } from './bench.ts';
+import { exportTestCmd, repro } from './repro.ts';
 
 const HELP = `cage: counterfactual minimization for browser bugs
 
@@ -12,6 +13,8 @@ Commands:
   record        record one run of a flow as a session
   verify        replay a session N times, check it is deterministic
   explain       find the minimal set of conditions that cause the failure
+  repro         replay a bundle's minimal failing configuration
+  export-test   write a standalone Playwright regression test from a bundle
   bench         score explain against the planted bugs in examples/shop
 
 Run \`cage <command> --help\` for options and examples.`;
@@ -22,6 +25,8 @@ const commands: Record<string, (argv: string[]) => Promise<number>> = {
   verify,
   explain: explainCmd,
   bench,
+  repro,
+  'export-test': exportTestCmd,
 };
 
 async function main(): Promise<number> {

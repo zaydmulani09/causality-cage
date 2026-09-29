@@ -1,9 +1,11 @@
 export const DEFAULT_VOLATILE_PARAMS = ['_', 'ts', 't', 'nonce', 'cacheBust'];
+/** Secret-looking names. Such query params are left out of exchange keys, so keys never carry secrets. */
+export const SECRET_KEY = /token|secret|password|passwd|session|auth|jwt|key/i;
 
-/** Sort query params, drop volatile ones, drop origin when it equals baseURL's origin. */
+/** Sort query params, drop volatile and secret-named ones, drop origin when it equals baseURL's origin. */
 export function normalizeUrl(url: string, baseURL: string, volatile = DEFAULT_VOLATILE_PARAMS): string {
   const u = new URL(url, baseURL);
-  const params = [...u.searchParams].filter(([k]) => !volatile.includes(k));
+  const params = [...u.searchParams].filter(([k]) => !volatile.includes(k) && !SECRET_KEY.test(k));
   params.sort(([a, av], [b, bv]) => (a === b ? (av < bv ? -1 : av > bv ? 1 : 0) : a < b ? -1 : 1));
   const qs = params.length ? '?' + new URLSearchParams(params).toString() : '';
   const origin = u.origin === new URL(baseURL).origin ? '' : u.origin;

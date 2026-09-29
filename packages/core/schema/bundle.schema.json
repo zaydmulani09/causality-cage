@@ -1,0 +1,897 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "cage bundle files",
+  "definitions": {
+    "CookieState": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "DelayCurve": {
+      "type": "object",
+      "properties": {
+        "factor": {
+          "type": "string"
+        },
+        "neutralMs": {
+          "type": "number"
+        },
+        "observedMs": {
+          "type": "number"
+        },
+        "thresholdMs": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "grid": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ms": {
+                "type": "number"
+              },
+              "runs": {
+                "type": "number"
+              },
+              "fails": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "ms",
+              "runs",
+              "fails"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "factor",
+        "neutralMs",
+        "observedMs",
+        "thresholdMs",
+        "grid"
+      ]
+    },
+    "EnvState": {
+      "type": "object",
+      "properties": {
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "width",
+            "height"
+          ]
+        },
+        "locale": {
+          "type": "string"
+        },
+        "timezoneId": {
+          "type": "string"
+        },
+        "userAgent": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "viewport",
+        "locale",
+        "timezoneId",
+        "userAgent"
+      ]
+    },
+    "Exchange": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "number"
+        },
+        "method": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "nth": {
+          "type": "number"
+        },
+        "reqBodyHash": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "status": {
+          "type": "number"
+        },
+        "headers": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "body": {
+          "type": "string"
+        },
+        "bodyEncoding": {
+          "enum": [
+            "utf8",
+            "base64"
+          ]
+        },
+        "startMs": {
+          "type": "number"
+        },
+        "latencyMs": {
+          "type": "number"
+        },
+        "endMs": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "method",
+        "url",
+        "key",
+        "nth",
+        "reqBodyHash",
+        "resourceType",
+        "status",
+        "headers",
+        "body",
+        "bodyEncoding",
+        "startMs",
+        "latencyMs",
+        "endMs"
+      ]
+    },
+    "ExperimentRecord": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "number"
+        },
+        "phase": {
+          "enum": [
+            "delay",
+            "gate",
+            "search",
+            "verify",
+            "table",
+            "variant"
+          ]
+        },
+        "key": {
+          "type": "string"
+        },
+        "bits": {
+          "type": "string"
+        },
+        "overrides": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        "runs": {
+          "type": "number"
+        },
+        "fails": {
+          "type": "number"
+        },
+        "errors": {
+          "type": "number"
+        },
+        "decision": {
+          "enum": [
+            "FAIL",
+            "PASS",
+            "ERROR",
+            "UNRESOLVED"
+          ]
+        },
+        "wallMs": {
+          "type": "number"
+        },
+        "seqHashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "n",
+        "phase",
+        "key",
+        "bits",
+        "runs",
+        "fails",
+        "errors",
+        "decision",
+        "wallMs",
+        "seqHashes"
+      ]
+    },
+    "Factor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "body",
+            "status",
+            "header",
+            "delay",
+            "order",
+            "presence",
+            "storage",
+            "cookie",
+            "env"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "target2": {
+          "type": "string"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "area": {
+          "enum": [
+            "localStorage",
+            "sessionStorage"
+          ]
+        },
+        "observed": {},
+        "neutral": {}
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "observed",
+        "neutral"
+      ]
+    },
+    "FactorNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FactorNode"
+          }
+        },
+        "factor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label"
+      ]
+    },
+    "GateRates": {
+      "type": "object",
+      "properties": {
+        "allTrue": {
+          "type": "object",
+          "properties": {
+            "runs": {
+              "type": "number"
+            },
+            "fails": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "runs",
+            "fails"
+          ]
+        },
+        "allFalse": {
+          "type": "object",
+          "properties": {
+            "runs": {
+              "type": "number"
+            },
+            "fails": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "runs",
+            "fails"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "allTrue",
+        "allFalse"
+      ]
+    },
+    "Manifest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number"
+        },
+        "toolVersion": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "baseOrigin": {
+          "type": "string"
+        },
+        "flowHash": {
+          "type": "string"
+        },
+        "flowFile": {
+          "type": "string"
+        },
+        "oracle": {
+          "$ref": "#/definitions/OracleSpec"
+        },
+        "apiGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowUnmatched": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "freezeRandom": {
+          "type": "boolean"
+        },
+        "freezeTime": {
+          "type": "boolean"
+        },
+        "redaction": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/definitions/RedactionReport"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "toolVersion",
+        "createdAt",
+        "baseOrigin",
+        "flowHash",
+        "flowFile",
+        "oracle",
+        "apiGlobs",
+        "allowUnmatched",
+        "freezeRandom",
+        "freezeTime",
+        "redaction"
+      ]
+    },
+    "OracleOutcome": {
+      "type": "object",
+      "properties": {
+        "failed": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "failed"
+      ]
+    },
+    "OracleSpec": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "failOnUncaught": {
+          "type": "boolean"
+        },
+        "failOnConsole": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failOnTextMissing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failOnSelectorMissing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RedactionReport": {
+      "type": "object",
+      "properties": {
+        "headers": {
+          "type": "number"
+        },
+        "keyed": {
+          "type": "number"
+        },
+        "emails": {
+          "type": "number"
+        },
+        "jwts": {
+          "type": "number"
+        },
+        "cards": {
+          "type": "number"
+        },
+        "urlParams": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "headers",
+        "keyed",
+        "emails",
+        "jwts",
+        "cards",
+        "urlParams"
+      ]
+    },
+    "Result": {
+      "type": "object",
+      "properties": {
+        "verdict": {
+          "enum": [
+            "explained",
+            "partial",
+            "unexplained",
+            "untrustworthy-oracle"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "sentence": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "deterministic",
+            "statistical"
+          ]
+        },
+        "singleSession": {
+          "type": "boolean"
+        },
+        "gate": {
+          "$ref": "#/definitions/GateRates"
+        },
+        "factorCount": {
+          "type": "number"
+        },
+        "minimalSets": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "structure": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "const": "SINGLE"
+            },
+            {
+              "const": "AND"
+            },
+            {
+              "const": "OR"
+            },
+            {
+              "const": "OTHER"
+            }
+          ]
+        },
+        "truthTable": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "factors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TruthRow"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "factors",
+                "rows"
+              ]
+            }
+          ]
+        },
+        "verification": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VerificationRow"
+          }
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VariantProbe"
+          }
+        },
+        "delayCurves": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DelayCurve"
+          }
+        },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "used": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "used",
+            "limit"
+          ]
+        },
+        "wallMs": {
+          "type": "number"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "reason",
+        "sentence",
+        "mode",
+        "singleSession",
+        "gate",
+        "factorCount",
+        "minimalSets",
+        "structure",
+        "truthTable",
+        "verification",
+        "variants",
+        "delayCurves",
+        "budget",
+        "wallMs",
+        "warnings"
+      ]
+    },
+    "Session": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "baseURL": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "env": {
+          "$ref": "#/definitions/EnvState"
+        },
+        "storageStart": {
+          "$ref": "#/definitions/StorageSnapshot"
+        },
+        "storageEnd": {
+          "$ref": "#/definitions/StorageSnapshot"
+        },
+        "exchanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Exchange"
+          }
+        },
+        "consoleErrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pageErrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "oracle": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/definitions/OracleOutcome"
+            }
+          ]
+        },
+        "seqHash": {
+          "type": "string"
+        },
+        "synthesized": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "label",
+        "baseURL",
+        "createdAt",
+        "env",
+        "storageStart",
+        "storageEnd",
+        "exchanges",
+        "consoleErrors",
+        "pageErrors",
+        "oracle",
+        "seqHash"
+      ]
+    },
+    "StorageSnapshot": {
+      "type": "object",
+      "properties": {
+        "cookies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CookieState"
+          }
+        },
+        "localStorage": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "sessionStorage": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "cookies",
+        "localStorage",
+        "sessionStorage"
+      ]
+    },
+    "TruthRow": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decision": {
+          "enum": [
+            "FAIL",
+            "PASS",
+            "ERROR",
+            "UNRESOLVED"
+          ]
+        },
+        "runs": {
+          "type": "number"
+        },
+        "fails": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "on",
+        "decision",
+        "runs",
+        "fails"
+      ]
+    },
+    "VariantProbe": {
+      "type": "object",
+      "properties": {
+        "factor": {
+          "type": "string"
+        },
+        "cls": {
+          "type": "string"
+        },
+        "value": {},
+        "decision": {
+          "enum": [
+            "FAIL",
+            "PASS",
+            "ERROR",
+            "UNRESOLVED"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "factor",
+        "cls",
+        "value",
+        "decision"
+      ]
+    },
+    "VerificationRow": {
+      "type": "object",
+      "properties": {
+        "set": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removed": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "runs": {
+          "type": "number"
+        },
+        "fails": {
+          "type": "number"
+        },
+        "ok": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "set",
+        "removed",
+        "runs",
+        "fails",
+        "ok"
+      ]
+    }
+  }
+}

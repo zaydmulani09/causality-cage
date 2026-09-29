@@ -1,6 +1,9 @@
+import { writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { chromium } from 'playwright';
-import { buildOracle, explain as run, loadFlow, type ExperimentRecord, type Result, type Session } from '@causality-cage/core';
-import { int, need, ORACLE_HELP, ORACLE_OPTIONS, oracleSpec, parse, readJson, UsageError } from './args.ts';
+import { assembleBundle, buildOracle, explain as run, loadFlow, loadSource, packBundle, sha, type ExperimentRecord, type Result, type Session } from '@causality-cage/core';
+import { renderReport } from '@causality-cage/report';
+import { int, need, openFile, ORACLE_HELP, ORACLE_OPTIONS, oracleSpec, parse, readJson, TOOL_VERSION, UsageError } from './args.ts';
 
 const HELP = `cage explain --flow <flow> --bad <session.json> (--good <session.json> | --synthesize-good) [options]
 
@@ -13,8 +16,10 @@ Options:
   --bad <file>              failing session (required)
   --good <file>             passing session
   --synthesize-good         EXPERIMENTAL: no passing session; synthesize neutral values
-  --out <file.cage>         bundle to write
-  --open                    open the HTML report when done
+  --out <file.cage>         bundle to write (default result.cage); the report goes next to it as <name>.html
+  --no-open                 do not open the HTML report (opened by default in an interactive terminal)
+  --no-redact               keep secrets in the bundle (WARNING: tokens, cookies, emails stay readable)
+  --redact-allow <path>     JSON body path to leave unmasked, e.g. customer.email (repeatable)
   --budget <n>              max experiments (default 500)
   --concurrency <n>         parallel browser contexts (default 4)
   --timeout <ms>            per-experiment timeout (default 20000)
@@ -48,7 +53,9 @@ export async function explainCmd(argv: string[]): Promise<number> {
       good: { type: 'string' },
       'synthesize-good': { type: 'boolean' },
       out: { type: 'string' },
-      open: { type: 'boolean' },
+      open: { type: 'boolean', default: !!process.stdout.isTTY },
+      redact: { type: 'boolean', default: true },
+      'redact-allow': { type: 'string', multiple: true },
       budget: { type: 'string' },
       concurrency: { type: 'string' },
       timeout: { type: 'string' },
@@ -105,9 +112,41 @@ export async function explainCmd(argv: string[]): Promise<number> {
       },
     });
     if (tty && !v.json) process.stdout.write('\r\x1b[K');
-    const res = out.result;
-    if (v.json) console.log(JSON.stringify({ result: res, factors: out.factors }, null, 2));
-    else printSummary(res, out.factors);
+    const flowSource = await loadSource(flowFile);
+    const spec = oracleSpec(v);
+    const bundle = assembleBundle({
+      out,
+      bad,
+      good,
+      manifest: {
+        toolVersion: TOOL_VERSION,
+        baseOrigin: new URL(v['base-url'] ?? bad.baseURL).origin,
+        flowHash: sha(flowSource),
+        flowFile: resolve(flowFile),
+        oracle: spec.file ? { ...spec, file: resolve(spec.file) } : spec,
+        apiGlobs: v.api ?? [],
+        allowUnmatched: v['allow-unmatched'] ?? [],
+        freezeRandom: !!v['freeze-random'],
+        freezeTime: !!v['freeze-time'],
+      },
+      flowSource,
+      oracleSource: spec.file ? await loadSource(spec.file) : null,
+      redact: v.redact !== false,
+      redactAllow: v['redact-allow'] ?? [],
+    });
+    const outFile = v.out ?? 'result.cage';
+    const html = renderReport(bundle);
+    const htmlFile = outFile.replace(/\.cage$/, '') + '.html';
+    await writeFile(outFile, packBundle(bundle, html));
+    await writeFile(htmlFile, html);
+    const res = bundle.result;
+    if (v.json) console.log(JSON.stringify({ result: res, factors: bundle.factors, bundle: outFile, report: htmlFile }, null, 2));
+    else {
+      printSummary(res, bundle.factors);
+      if (v.redact === false) console.log(color(31, '  WARNING: --no-redact: the bundle contains unmasked headers, cookies, storage and bodies.'));
+      console.log(`  bundle ${outFile}, report ${htmlFile}`);
+    }
+    if (v.open) openFile(resolve(htmlFile));
     return EXIT[res.verdict];
   } finally {
     await browser.close();

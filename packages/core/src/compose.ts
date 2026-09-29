@@ -97,3 +97,20 @@ export function applyConfig(bad: Session, good: Session, pairs: Pair[], factors:
   }
   return { plan: { responses, orders }, env, storage };
 }
+
+/** Apply `--set <id|label|all>=<observed|neutral>` entries, in order, on top of `base` (observed ids). */
+export function selectConfig(factors: Factor[], base: string[], sets: string[]): string[] {
+  const on = new Set(base);
+  for (const s of sets) {
+    const i = s.lastIndexOf('=');
+    const [name, v] = [s.slice(0, i), s.slice(i + 1)];
+    if (v !== 'observed' && v !== 'neutral') throw new Error(`--set ${s}: value must be observed or neutral`);
+    const hit = name === 'all' ? factors : factors.filter((f) => f.id === name || f.label === name);
+    if (!hit.length) throw new Error(`--set ${s}: no factor with id or label "${name}"`);
+    for (const f of hit) {
+      if (v === 'observed') on.add(f.id);
+      else on.delete(f.id);
+    }
+  }
+  return factors.filter((f) => on.has(f.id)).map((f) => f.id);
+}

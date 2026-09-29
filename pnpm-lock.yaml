@@ -72,6 +72,9 @@ importers:
       '@causality-cage/core':
         specifier: workspace:*
         version: link:../core
+      '@causality-cage/report':
+        specifier: workspace:*
+        version: link:../report
       playwright:
         specifier: 1.60.0
         version: 1.60.0
@@ -90,6 +93,12 @@ importers:
       tsx:
         specifier: ^4.20.6
         version: 4.23.15
+
+  packages/report:
+    dependencies:
+      '@causality-cage/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

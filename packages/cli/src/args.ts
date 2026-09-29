@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { parseArgs, type ParseArgsConfig } from 'node:util';
 import type { OracleSpec } from '@causality-cage/core';
@@ -27,7 +29,7 @@ export function parse<O extends Options>(argv: string[], options: O, help: strin
     return null;
   }
   try {
-    return parseArgs({ args: argv, options: { ...options, debug: { type: 'boolean' } }, allowPositionals: true, strict: true });
+    return parseArgs({ args: argv, options: { ...options, debug: { type: 'boolean' } }, allowPositionals: true, allowNegative: true, strict: true });
   } catch (e) {
     throw new UsageError(`${(e as Error).message}\n\n${help}`);
   }
@@ -69,3 +71,11 @@ export function int(v: unknown, what: string, dflt: number): number {
   if (!Number.isInteger(n) || n < 1) throw new UsageError(`${what} must be a positive integer, got "${String(v)}"`);
   return n;
 }
+
+/** Open a file in the default browser/app. Best effort. */
+export function openFile(path: string): void {
+  const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', path]] : process.platform === 'darwin' ? ['open', [path]] : ['xdg-open', [path]];
+  spawn(cmd, args as string[], { stdio: 'ignore', detached: true, windowsVerbatimArguments: process.platform === 'win32' }).unref();
+}
+
+export const TOOL_VERSION = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version;
