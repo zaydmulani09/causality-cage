@@ -24,18 +24,27 @@ plays the toggles on a one second cadence for screen recording.
 
 ## Install
 
-From source (Node 20.16+, pnpm). PowerShell:
+Node 20.16+. PowerShell or bash:
+
+```powershell
+npm install -g causality-cage
+npx playwright install chromium
+cage doctor
+```
+
+`cage doctor` checks Node, Playwright and a launchable Chromium, and says what to run if one is missing.
+
+The example shop, `cage bench` and `cage selfcheck` need a source checkout (pnpm):
 
 ```powershell
 git clone https://github.com/zaydmulani09/causality-cage
 cd causality-cage
 pnpm install
 pnpm exec playwright install chromium
-node packages/cli/bin/cage.mjs doctor
 ```
 
-bash is the same. `packages/cli` is the `causality-cage` package; its `cage` bin runs the TypeScript sources through
-tsx, so there is no build step. Below, `cage` means `node packages/cli/bin/cage.mjs` (or `pnpm cage`).
+In a checkout, `cage` is `node packages/cli/bin/cage.mjs` (or `pnpm cage`); it runs the TypeScript sources through
+tsx with no build step. `pnpm build:npm` bundles the published package into `dist-npm/`.
 
 ## Quickstart with the example shop
 
