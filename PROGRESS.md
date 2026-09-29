@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current: M7 single-session.
+Current: M8 bench/docs/launch.
 
 ## Skills
 - /caveman ultra + /ponytail ultra loaded (found, both).
@@ -17,7 +17,7 @@ Current: M7 single-session.
 | M4 stats/structure | PASS | full cage bench: 10/10 (B0-B8 + demo). B3 threshold 822 ms (band 600-900; earlier runs 848-871 with an 800 ms app timer, now 750 ms). B4 order, B6 OR both sets, B8 unexplained (2 experiments), B0 no failure. B7 statistical mode: 10/10 repeated runs after fixes below |
 | M5 bundle/redact/repro | PASS | unit: round trip (write/read zip deepEqual), 9 planted secrets (JWT, token, email, card, cookie, storage key, URL param, console error, sentence) absent from every zipped file, type/null/consistency preserved, schema file == regenerated from types.ts, malformed files rejected with paths. Integration tests/integration/export.spec.ts: real B1 bundle round trip; exported spec exits non-zero on BUG=B1 ("the failure still reproduces"), 0 on BUG=none. cage repro: minimal set FAIL, --set all=neutral PASS |
 | M6 report | PASS | tests/integration/report.spec.ts on a real demo-scenario bundle (6/6): file:// with non-file requests aborted → 0 network requests; clicking/Enter on factors matches embedded truth table (FAIL → NO FAILURE → FAIL); 375 px: scrollWidth <= clientWidth, vertical graph shown; WCAG contrast >= 4.5 for fg/muted/fail/pass/warn/accent pairs and >= 7 body text, light + dark; ?demo=1 autoplay. Visual check via headless screenshots light/dark/phone |
-| M7 single-session | todo | |
+| M7 single-session | PASS | cage bench --only B1,B5 --synthesize-good: 2/2 exact (B1 27 experiments/75 factors, B5 22/76). CLI prints EXPERIMENTAL banner; report + result carry singleSession + warning. Full single-session bench 5/10, failures analysed in docs/limits.md |
 | M8 bench/docs | todo | |
 
 ## Deviations
@@ -46,6 +46,8 @@ Current: M7 single-session.
 
 - Report: two SVG graph layouts (wide + stacked for phones) switched by CSS; tables keep a min width and scroll inside their own box on phones (page itself never scrolls sideways). CSP meta blocks all network.
 - Latency panel marker reads the nearest measured grid point (no interpolation claimed).
+
+- Single-session: requests the failing run never made go live by default (no recording exists); warned + documented; --allow-unmatched restricts. null → "" type default.
 
 ## Open issues
 - none

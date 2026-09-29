@@ -48,6 +48,9 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
   const byId = new Map(factors.map((f) => [f.id, f]));
   const order = (ids: string[]) => [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
   const budget = o.budget ?? 500;
+  // Single-session: requests the failing run never made (it crashed first) have no recording; they go live.
+  const liveUnmatched = !!o.singleSession && !o.allowUnmatched?.length;
+  const allowUnmatched = liveUnmatched ? ['**'] : (o.allowUnmatched ?? []);
   const concurrency = o.concurrency ?? 4;
   const lab = new Lab({
     browser: o.browser,
@@ -61,7 +64,7 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
     concurrency,
     budget,
     timeoutMs: o.timeoutMs ?? 20_000,
-    allowUnmatched: o.allowUnmatched ?? [],
+    allowUnmatched,
     apiGlobs: o.apiGlobs ?? [],
     freezeRandom: !!o.freezeRandom,
     freezeTime: !!o.freezeTime,
@@ -87,6 +90,8 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
     wallMs: 0,
     warnings: [...ex.warnings],
   };
+  if (o.singleSession) r.warnings.push('Single-session mode is experimental: neutral values are synthesized, not observed.');
+  if (liveUnmatched) r.warnings.push('Requests the failing session never made are sent to the live app (single-session default; pass --allow-unmatched to restrict).');
   let failReason = '';
 
   const finish = async (): Promise<Explained> => {

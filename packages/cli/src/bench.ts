@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { synthesizeGood } from '@causality-cage/core';
 import { loadCases, runCase, table, type CaseRun } from '@causality-cage/bench';
 import { int, parse, UsageError } from './args.ts';
 
@@ -12,13 +13,14 @@ Options:
   --only <ids>        comma-separated bug ids, e.g. B1,B5
   --concurrency <n>   default 4
   --budget <n>        default 500
+  --synthesize-good   EXPERIMENTAL: ignore the recorded good sessions, synthesize them
 
 Example (PowerShell):
   pnpm bench
   pnpm cage bench --only B3 --concurrency 2`;
 
 export async function bench(argv: string[]): Promise<number> {
-  const a = parse(argv, { only: { type: 'string' }, concurrency: { type: 'string' }, budget: { type: 'string' } }, HELP);
+  const a = parse(argv, { only: { type: 'string' }, concurrency: { type: 'string' }, budget: { type: 'string' }, 'synthesize-good': { type: 'boolean' } }, HELP);
   if (!a) return 0;
   let cases = loadCases();
   if (a.values.only) {
@@ -34,14 +36,14 @@ export async function bench(argv: string[]): Promise<number> {
   try {
     for (const c of cases) {
       process.stderr.write(`${c.id}: recording + explaining…\n`);
-      const r = await runCase(c, browser, { concurrency, budget });
+      const r = await runCase(c, browser, { concurrency, budget, ...(a.values['synthesize-good'] ? { synthesize: synthesizeGood } : {}) });
       process.stderr.write(`${c.id}: ${r.match ? 'match' : 'MISMATCH'} (${r.got})\n`);
       runs.push(r);
     }
   } finally {
     await browser.close();
   }
-  console.log(`\ncage bench, concurrency ${concurrency}, budget ${budget}\n`);
+  console.log(`\ncage bench, concurrency ${concurrency}, budget ${budget}${a.values['synthesize-good'] ? ', single-session mode (experimental)' : ''}\n`);
   console.log(table(runs));
   console.log(`\nexact match: ${runs.filter((r) => r.match).length}/${runs.length}`);
   return runs.every((r) => r.match) ? 0 : 1;

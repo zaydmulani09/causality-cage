@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
-import { assembleBundle, buildOracle, explain as run, loadFlow, loadSource, packBundle, sha, type ExperimentRecord, type Result, type Session } from '@causality-cage/core';
+import { assembleBundle, synthesizeGood, buildOracle, explain as run, loadFlow, loadSource, packBundle, sha, type ExperimentRecord, type Result, type Session } from '@causality-cage/core';
 import { renderReport } from '@causality-cage/report';
 import { int, need, openFile, ORACLE_HELP, ORACLE_OPTIONS, oracleSpec, parse, readJson, TOOL_VERSION, UsageError } from './args.ts';
 
@@ -74,7 +74,9 @@ export async function explainCmd(argv: string[]): Promise<number> {
   const flowFile = need(v.flow, '--flow', HELP);
   const bad = await readJson<Session>(need(v.bad, '--bad', HELP), 'bad session');
   if (!v.good && !v['synthesize-good']) throw new UsageError(`pass --good <session.json>, or --synthesize-good to try without one\n\n${HELP}`);
-  const good = await readJson<Session>(v.good!, 'good session');
+  const synth = !v.good;
+  const good = synth ? synthesizeGood(bad) : await readJson<Session>(v.good!, 'good session');
+  if (synth && !v.json) console.log(color(33, 'EXPERIMENTAL single-session mode: neutral values are synthesized from the failing session (see docs/limits.md).'));
   const oracle = await buildOracle(oracleSpec(v));
   const flow = await loadFlow(flowFile);
   const browser = await chromium.launch();
@@ -93,6 +95,7 @@ export async function explainCmd(argv: string[]): Promise<number> {
       oracle,
       bad,
       good,
+      singleSession: synth,
       budget: int(v.budget, '--budget', 500),
       concurrency: int(v.concurrency, '--concurrency', 4),
       timeoutMs: int(v.timeout, '--timeout', 20_000),
