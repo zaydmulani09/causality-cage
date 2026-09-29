@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current: M6 report.
+Current: M7 single-session.
 
 ## Skills
 - /caveman ultra + /ponytail ultra loaded (found, both).
@@ -16,7 +16,7 @@ Current: M6 report.
 | M3 search | PASS | cage bench --only B1,B2,B5: exact 3/3 at concurrency 1, 2, 4 (same sets). Experiments c1/c2/c4: B1 11/11/11, B2 16/16/16, B5 17/19/19 (<=60). Unit: ddmin 1-minimality + memo/width invariance over 600 random monotone/non-monotone oracles |
 | M4 stats/structure | PASS | full cage bench: 10/10 (B0-B8 + demo). B3 threshold 822 ms (band 600-900; earlier runs 848-871 with an 800 ms app timer, now 750 ms). B4 order, B6 OR both sets, B8 unexplained (2 experiments), B0 no failure. B7 statistical mode: 10/10 repeated runs after fixes below |
 | M5 bundle/redact/repro | PASS | unit: round trip (write/read zip deepEqual), 9 planted secrets (JWT, token, email, card, cookie, storage key, URL param, console error, sentence) absent from every zipped file, type/null/consistency preserved, schema file == regenerated from types.ts, malformed files rejected with paths. Integration tests/integration/export.spec.ts: real B1 bundle round trip; exported spec exits non-zero on BUG=B1 ("the failure still reproduces"), 0 on BUG=none. cage repro: minimal set FAIL, --set all=neutral PASS |
-| M6 report | todo | |
+| M6 report | PASS | tests/integration/report.spec.ts on a real demo-scenario bundle (6/6): file:// with non-file requests aborted → 0 network requests; clicking/Enter on factors matches embedded truth table (FAIL → NO FAILURE → FAIL); 375 px: scrollWidth <= clientWidth, vertical graph shown; WCAG contrast >= 4.5 for fg/muted/fail/pass/warn/accent pairs and >= 7 body text, light + dark; ?demo=1 autoplay. Visual check via headless screenshots light/dark/phone |
 | M7 single-session | todo | |
 | M8 bench/docs | todo | |
 
@@ -43,6 +43,9 @@ Current: M6 report.
 - Secret-named query params are dropped from exchange keys (like volatile params) so redacted bundles still replay; a differing token param is therefore never a factor.
 - Flow/oracle sources go into the bundle verbatim (not redacted); documented.
 - explain: --out defaults to result.cage, report written as <name>.html beside it, opened by default only in an interactive terminal (--no-open).
+
+- Report: two SVG graph layouts (wide + stacked for phones) switched by CSS; tables keep a min width and scroll inside their own box on phones (page itself never scrolls sideways). CSP meta blocks all network.
+- Latency panel marker reads the nearest measured grid point (no interpolation claimed).
 
 ## Open issues
 - none

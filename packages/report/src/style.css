@@ -1,0 +1,128 @@
+:root {
+  --bg: #fbfbf9;
+  --card: #ffffff;
+  --fg: #1c1d21;
+  --muted: #55585f;
+  --line: #dcdcd6;
+  --accent: #2b59c3;
+  --accent-ink: #ffffff;
+  --fail: #b3261e;
+  --fail-bg: #fbe9e7;
+  --pass: #1e6b3a;
+  --pass-bg: #e6f2ea;
+  --warn: #8a5a00;
+  --warn-bg: #fdf1dc;
+  --code-bg: #f1f1ec;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #141518;
+    --card: #1c1d21;
+    --fg: #e8e8e3;
+    --muted: #a5a8ae;
+    --line: #34363c;
+    --accent: #7ea2f0;
+    --accent-ink: #10131a;
+    --fail: #f2837a;
+    --fail-bg: #3a1d1b;
+    --pass: #7cc795;
+    --pass-bg: #17301f;
+    --warn: #e8b85c;
+    --warn-bg: #362a12;
+    --code-bg: #25272c;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+code, pre, .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, 'Liberation Mono', monospace; font-size: 13px; }
+header.top { border-bottom: 1px solid var(--line); padding: 12px 16px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.brand { font-weight: 700; letter-spacing: 0.02em; }
+.meta { color: var(--muted); font-size: 13px; }
+main { max-width: 920px; margin: 0 auto; padding: 16px; }
+section { margin: 0 0 28px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.verdict { border-left: 5px solid var(--accent); }
+.verdict-explained { border-left-color: var(--pass); }
+.verdict-partial, .verdict-unexplained { border-left-color: var(--warn); }
+.verdict-untrustworthy-oracle { border-left-color: var(--fail); }
+.verdict-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.verdict-explained .verdict-label { color: var(--pass); }
+.verdict-partial .verdict-label, .verdict-unexplained .verdict-label { color: var(--warn); }
+.verdict-untrustworthy-oracle .verdict-label { color: var(--fail); }
+.sentence { font-size: 19px; line-height: 1.45; margin: 6px 0 12px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; color: var(--muted); font-size: 13px; }
+.stats div { display: flex; gap: 6px; }
+.stats dt { margin: 0; }
+.stats dd { margin: 0; color: var(--fg); font-weight: 600; }
+.sets { margin: 10px 0 0; padding: 0; list-style: none; }
+.sets li { margin: 4px 0; }
+svg { display: block; width: 100%; height: auto; }
+.graph text { font: 13px system-ui, sans-serif; fill: var(--fg); }
+.graph .edge { stroke: var(--line); stroke-width: 2; fill: none; }
+.graph .edge.hot { stroke: var(--fail); }
+.graph .factor { cursor: pointer; }
+.graph .factor rect { fill: var(--accent); stroke: var(--accent); stroke-width: 1.5; }
+.graph .factor text { fill: var(--accent-ink); }
+.graph .factor.neutral rect { fill: var(--card); }
+.graph .factor.neutral text { fill: var(--fg); }
+.graph .factor:focus-visible rect { stroke: var(--fg); stroke-width: 3; }
+.graph .factor .state { font-size: 11px; opacity: 0.85; }
+.graph .join circle { fill: var(--card); stroke: var(--muted); stroke-width: 1.5; }
+.graph .join text { font-weight: 700; }
+.graph .outcome rect { stroke-width: 2; }
+.graph .outcome.FAIL rect { fill: var(--fail-bg); stroke: var(--fail); }
+.graph .outcome.FAIL text { fill: var(--fail); }
+.graph .outcome.PASS rect { fill: var(--pass-bg); stroke: var(--pass); }
+.graph .outcome.PASS text { fill: var(--pass); }
+.graph .outcome.UNKNOWN rect { fill: var(--warn-bg); stroke: var(--warn); }
+.graph .outcome.UNKNOWN text { fill: var(--warn); }
+.graph .outcome text { font-weight: 700; }
+.caption { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.chart .axis { stroke: var(--muted); stroke-width: 1; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .curve { stroke: var(--fail); stroke-width: 2.5; fill: none; }
+.chart .pt { fill: var(--fail); }
+.chart .threshold { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .marker { stroke: var(--fg); stroke-width: 2; }
+.chart text { font: 12px system-ui, sans-serif; fill: var(--muted); }
+.chart .tlabel { fill: var(--accent); font-weight: 600; }
+.readout { margin: 8px 0 0; font-size: 14px; }
+input[type='range'] { width: 100%; accent-color: var(--accent); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+th button { all: unset; cursor: pointer; }
+th button:focus-visible { outline: 2px solid var(--accent); }
+tr:last-child td { border-bottom: 0; }
+.badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.badge.FAIL { color: var(--fail); background: var(--fail-bg); }
+.badge.PASS { color: var(--pass); background: var(--pass-bg); }
+.badge.ERROR, .badge.UNRESOLVED { color: var(--warn); background: var(--warn-bg); }
+input[type='search'] { width: 100%; max-width: 360px; padding: 7px 10px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--fg); font: inherit; }
+.scope { border: 1px solid var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 16px; }
+.scope h2 { color: var(--warn); }
+.scope p, .scope ul { margin: 6px 0; }
+.scope ul { padding-left: 20px; }
+pre { background: var(--code-bg); padding: 10px 12px; border-radius: 6px; overflow-x: auto; margin: 6px 0; white-space: pre-wrap; }
+.muted { color: var(--muted); }
+.warn { color: var(--warn); }
+.graph-narrow { display: none; }
+@media (max-width: 600px) {
+  .graph-wide { display: none; }
+  .graph-narrow { display: block; }
+  .sentence { font-size: 17px; }
+  .chart text { font-size: 22px; }
+}
+table td, table th { overflow-wrap: normal; }
+table { min-width: 560px; }

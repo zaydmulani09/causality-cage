@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { align, applyConfig, buildOracle, exportTest, loadFlow, makeReplayer, readBundle, runFlow, selectConfig, sha, type Bundle, type OracleSpec } from '@causality-cage/core';
-import { int, need, parse, UsageError } from './args.ts';
+import { renderReport } from '@causality-cage/report';
+import { int, need, openFile, parse, UsageError } from './args.ts';
 
 /** Flow/oracle paths for a bundle: the original files if unchanged, else the copies stored in the bundle. */
 async function sources(b: Bundle): Promise<{ flowFile: string; oracle: OracleSpec }> {
@@ -94,5 +95,24 @@ export async function exportTestCmd(argv: string[]): Promise<number> {
     await writeFile(file, content);
   }
   console.log(`wrote ${resolve(out)}\nrun (PowerShell):  cd ${out}; $env:CAGE_BASE_URL = "${b.manifest.baseOrigin}"; npx playwright test`);
+  return 0;
+}
+
+const REPORT_HELP = `cage report <result.cage> [--out <file.html>] [--open]
+
+Regenerates the self-contained HTML report from a bundle (default: <name>.html next to it).
+
+Example (PowerShell):
+  cage report result.cage --open`;
+
+export async function reportCmd(argv: string[]): Promise<number> {
+  const a = parse(argv, { out: { type: 'string' }, open: { type: 'boolean' } }, REPORT_HELP);
+  if (!a) return 0;
+  const file = need(a.positionals[0], '<result.cage>', REPORT_HELP);
+  const { bundle } = await readBundle(file);
+  const out = a.values.out ?? file.replace(/\.cage$/, '') + '.html';
+  await writeFile(out, renderReport(bundle));
+  console.log(`wrote ${out}`);
+  if (a.values.open) openFile(resolve(out));
   return 0;
 }
