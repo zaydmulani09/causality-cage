@@ -2,6 +2,8 @@ import { UsageError } from './args.ts';
 import { doctor } from './doctor.ts';
 import { record } from './record.ts';
 import { verify } from './verify.ts';
+import { explainCmd } from './explain.ts';
+import { bench } from './bench.ts';
 
 const HELP = `cage: counterfactual minimization for browser bugs
 
@@ -9,6 +11,8 @@ Commands:
   doctor        check Node, Playwright and Chromium
   record        record one run of a flow as a session
   verify        replay a session N times, check it is deterministic
+  explain       find the minimal set of conditions that cause the failure
+  bench         score explain against the planted bugs in examples/shop
 
 Run \`cage <command> --help\` for options and examples.`;
 
@@ -16,6 +20,8 @@ const commands: Record<string, (argv: string[]) => Promise<number>> = {
   doctor,
   record,
   verify,
+  explain: explainCmd,
+  bench,
 };
 
 async function main(): Promise<number> {

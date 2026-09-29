@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@causality-cage/core": "workspace:*",
+    "@causality-cage/bench": "workspace:*",
     "playwright": "1.60.0",
     "tsx": "^4.20.6"
   }

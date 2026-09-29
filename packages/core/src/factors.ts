@@ -92,8 +92,10 @@ function draftFactors(bad: Session, good: Session, pairs: Pair[], o: Required<Ex
   for (const p of pairs) {
     const t = shortTarget(p.target);
     const sub = p.nth > 0 ? [p.target] : [];
+    // Only-in-good exchanges are not factors: the failing run never got that far (a consequence, not a condition).
+    // They are served as recorded if the app asks for them.
     if (!p.bad || !p.good) {
-      d.push({ kind: 'presence', label: `presence ${t}`, target: p.target, observed: !!p.bad, neutral: !!p.good, group: p.key, sub });
+      if (p.bad) d.push({ kind: 'presence', label: `presence ${t}`, target: p.target, observed: !!p.bad, neutral: !!p.good, group: p.key, sub });
       continue;
     }
     const { bad: b, good: g } = p;

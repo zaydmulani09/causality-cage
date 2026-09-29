@@ -40,10 +40,10 @@ export function applyConfig(bad: Session, good: Session, pairs: Pair[], factors:
   const responses = new Map<string, Served>();
   for (const p of pairs) {
     const fs = byTarget.get(p.target) ?? [];
-    const presence = fs.find((f) => f.kind === 'presence');
-    if (presence) {
+    if (!p.bad || !p.good) {
+      const presence = fs.find((f) => f.kind === 'presence');
       const e = (p.bad ?? p.good)!;
-      responses.set(p.target, val(presence) === true ? { status: e.status, headers: e.headers, body: e.body, bodyEncoding: e.bodyEncoding, latencyMs: e.latencyMs } : { status: 0, headers: {}, body: '', bodyEncoding: 'utf8', latencyMs: 0, abort: true });
+      responses.set(p.target, !presence || val(presence) === true ? { status: e.status, headers: e.headers, body: e.body, bodyEncoding: e.bodyEncoding, latencyMs: e.latencyMs } : { status: 0, headers: {}, body: '', bodyEncoding: 'utf8', latencyMs: 0, abort: true });
       continue;
     }
     const b = p.bad!;

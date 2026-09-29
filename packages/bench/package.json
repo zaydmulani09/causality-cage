@@ -1,0 +1,14 @@
+{
+  "name": "@causality-cage/bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@causality-cage/core": "workspace:*",
+    "playwright": "1.60.0"
+  }
+}

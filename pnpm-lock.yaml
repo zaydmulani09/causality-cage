@@ -52,8 +52,20 @@ importers:
         specifier: ^7.2.0
         version: 7.3.6(@types/node@22.20.4)(tsx@4.23.15)
 
+  packages/bench:
+    dependencies:
+      '@causality-cage/core':
+        specifier: workspace:*
+        version: link:../core
+      playwright:
+        specifier: 1.60.0
+        version: 1.60.0
+
   packages/cli:
     dependencies:
+      '@causality-cage/bench':
+        specifier: workspace:*
+        version: link:../bench
       '@causality-cage/core':
         specifier: workspace:*
         version: link:../core

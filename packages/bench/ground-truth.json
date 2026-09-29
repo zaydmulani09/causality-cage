@@ -1,0 +1,75 @@
+[
+  {
+    "id": "B1",
+    "tests": "single cause",
+    "defect": "checkout crashes when cart.customer.tax_id is null",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "explained", "sets": [["body GET /api/cart customer.tax_id"]] }
+  },
+  {
+    "id": "B2",
+    "tests": "conjunction",
+    "defect": "crash only when cart.discount.code is present AND localStorage exp_assignment = v2-stale",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "states": { "bad": { "localStorage": { "exp_assignment": "v2-stale" } }, "good": { "localStorage": { "exp_assignment": "v1" } } },
+    "expect": { "verdict": "explained", "sets": [["body GET /api/cart discount.code", "storage localStorage exp_assignment"]] }
+  },
+  {
+    "id": "B3",
+    "tests": "latency race + threshold",
+    "defect": "stale total when /api/prices lands more than 800 ms after /api/inventory",
+    "oracle": { "failOnTextMissing": ["Total: $42.00"] },
+    "expect": { "verdict": "explained", "sets": [["delay GET /api/prices"]], "thresholdMs": [600, 900] }
+  },
+  {
+    "id": "B4",
+    "tests": "ordering",
+    "defect": "profile-cache arriving after the fresh profile overwrites it (last write wins)",
+    "oracle": { "failOnTextMissing": ["Signed in as Ada Lovelace"] },
+    "expect": { "verdict": "explained", "sets": [["order GET /api/profile before GET /api/profile-cache"]] }
+  },
+  {
+    "id": "B5",
+    "tests": "HDD efficiency",
+    "defect": "crash on cart.currency = JPY, hidden among 40 irrelevant differing fields and reordered keys",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "explained", "sets": [["body GET /api/cart currency"]], "maxExperiments": 60 }
+  },
+  {
+    "id": "B6",
+    "tests": "OR structure",
+    "defect": "crash if cookie locale = tr-TR, or if /api/cart header x-region = eu (either alone)",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "states": { "bad": { "cookies": [{ "name": "locale", "value": "tr-TR" }] }, "good": { "cookies": [{ "name": "locale", "value": "en-US" }] } },
+    "expect": { "verdict": "explained", "sets": [["cookie locale"], ["header GET /api/cart x-region"]] }
+  },
+  {
+    "id": "B7",
+    "tests": "statistical mode",
+    "defect": "B1 plus an unrelated 30% random crash",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "explained", "sets": [["body GET /api/cart customer.tax_id"]] }
+  },
+  {
+    "id": "B8",
+    "tests": "honesty",
+    "defect": "crash driven by server-side state that no API response exposes",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "unexplained" }
+  },
+  {
+    "id": "B0",
+    "bug": "none",
+    "tests": "control",
+    "defect": "none",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "untrustworthy-oracle", "noFailure": true }
+  },
+  {
+    "id": "demo",
+    "tests": "demo: AND of body + latency",
+    "defect": "tax estimate crashes when prices are 700 ms late AND tax_id is null",
+    "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "expect": { "verdict": "explained", "sets": [["body GET /api/cart customer.tax_id", "delay GET /api/prices"]], "thresholdMs": [600, 850] }
+  }
+]

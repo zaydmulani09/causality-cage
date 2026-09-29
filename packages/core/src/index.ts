@@ -7,3 +7,8 @@ export * from './record.ts';
 export * from './replay.ts';
 export * from './factors.ts';
 export * from './compose.ts';
+export * from './search.ts';
+export * from './stats.ts';
+export * from './lab.ts';
+export * from './explain.ts';
+export * from './sentence.ts';

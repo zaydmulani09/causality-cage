@@ -29,14 +29,14 @@ describe('align', () => {
     expect(factors.map((f) => f.label)).toEqual(['body GET /a?x=1&y=2#1 n']);
   });
 
-  it('turns missing exchanges into presence factors', () => {
+  it('turns bad-only exchanges into presence factors, serves good-only ones', () => {
     const bad = session('bad', [{ url: `${base}/a` }, { url: `${base}/only-bad` }]);
     const good = session('good', [{ url: `${base}/a` }, { url: `${base}/only-good` }]);
     const { factors } = extractFactors(bad, good);
-    expect(factors.map((f) => [f.label, f.observed, f.neutral])).toEqual([
-      ['presence GET /only-bad', true, false],
-      ['presence GET /only-good', false, true],
-    ]);
+    expect(factors.map((f) => [f.label, f.observed, f.neutral])).toEqual([['presence GET /only-bad', true, false]]);
+    const none = applyConfig(bad, good, align(bad, good), factors, { on: [] });
+    expect(none.plan.responses.get('GET /only-bad#0')!.abort).toBe(true);
+    expect(none.plan.responses.get('GET /only-good#0')!.abort).toBeUndefined();
   });
 });
 
