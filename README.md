@@ -2,6 +2,10 @@
 
 **`cage` replays a failing browser session with its conditions flipped one group at a time and reports the minimal set of conditions (API fields, latency, response order, storage, cookies, environment) that actually causes the failure, with a verified, plain-English claim.**
 
+![cage explain on the demo bug, then the report: toggling a factor turns FAILURE into NO FAILURE, and the latency curve](launch/demo.gif)
+
+<sub>A real run on the example shop's demo bug, recorded with `scripts/record-demo.ts`. The search is shown at 12x speed; the verdict and the report are real time.</sub>
+
 ```text
 > cage explain --flow flows/checkout.ts --oracle oracles/no-crash.ts --bad sessions/bad.json --good sessions/good.json
 EXPLAINED  The failure ("Something went wrong: Cannot read properties of null (reading 'slice')") happens only when GET /api/cart returns customer.tax_id = null AND GET /api/prices takes longer than ~731 ms. Removing any one of them prevents it. (31 experiments.)
@@ -21,6 +25,16 @@ and opens the report: two factor nodes joined by AND into a red FAILURE node. Cl
 passing value and FAILURE turns green, because the report looks the outcome up in the truth table it measured. A
 latency panel shows the failure rate against `/api/prices` latency, with the flip point marked. `report.html?demo=1`
 plays the toggles on a one second cadence for screen recording.
+
+## Tried on a real bug
+
+[gothinkster/react-redux-realworld-example-app#187](https://github.com/gothinkster/react-redux-realworld-example-app/issues/187):
+the RealWorld React frontend crashed with `Cannot read property 'tags' of undefined`, and the reporter found a stale
+token left in localStorage by another backend. On the issue's exact commit, with a JWT this API never issued in
+`localStorage.jwt`, `cage explain` named `storage localStorage jwt` as the single cause in 10 experiments (14.9 s).
+With an oracle that only accepts the issue's exact error, it returned the full chain: the stale token AND the API
+rejecting `/user` and `/articles/feed`. The run also exposed two bugs in cage, both fixed. Everything that was run,
+the raw output, and the caveats: [launch/real-world.md](launch/real-world.md).
 
 ## Install
 

@@ -37,7 +37,7 @@ export async function startShop(bug: string, scenario: 'bad' | 'good'): Promise<
     url: `http://127.0.0.1:${port}`,
     stop: () =>
       new Promise((res) => {
-        if (child.exitCode !== null) return res();
+        if (child.exitCode !== null || child.signalCode !== null) return res();
         child.once('exit', () => res());
         child.kill();
       }),

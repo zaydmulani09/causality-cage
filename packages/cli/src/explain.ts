@@ -31,6 +31,8 @@ Options:
   --json                    print the result as JSON
   --debug                   stack traces on errors
 
+Environment: CAGE_PROGRESS=1 shows the live progress line even when stdout is not a terminal.
+
 ${ORACLE_HELP}
 
 Exit codes: 0 explained, 2 partial, 3 unexplained, 4 untrustworthy-oracle, 1 tool error.
@@ -40,7 +42,8 @@ Example (PowerShell):
 
 export const EXIT: Record<Result['verdict'], number> = { explained: 0, partial: 2, unexplained: 3, 'untrustworthy-oracle': 4 };
 
-const tty = process.stdout.isTTY;
+// CAGE_PROGRESS=1 forces the live line and colors when stdout is not a TTY (terminal recorders, CI logs).
+const tty = process.stdout.isTTY || process.env.CAGE_PROGRESS === '1';
 const color = (c: number, s: string) => (tty ? `\x1b[${c}m${s}\x1b[0m` : s);
 const DOT: Record<string, string> = { FAIL: color(31, '●'), PASS: color(32, '○'), ERROR: color(33, 'x'), UNRESOLVED: color(33, '?') };
 
