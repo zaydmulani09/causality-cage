@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { synthesizeGood } from '@causality-cage/core';
-import { loadCases, runCase, table, type CaseRun } from '@causality-cage/bench';
+import { loadCases, medianExperimentMs, runCase, selfcheck, table, type CaseRun, type SelfcheckRun } from '@causality-cage/bench';
 import { int, parse, UsageError } from './args.ts';
 
 const HELP = `cage bench [--only <ids>] [options]
@@ -45,6 +45,33 @@ export async function bench(argv: string[]): Promise<number> {
   }
   console.log(`\ncage bench, concurrency ${concurrency}, budget ${budget}${a.values['synthesize-good'] ? ', single-session mode (experimental)' : ''}\n`);
   console.log(table(runs));
-  console.log(`\nexact match: ${runs.filter((r) => r.match).length}/${runs.length}`);
+  console.log(`\nexact match: ${runs.filter((r) => r.match).length}/${runs.length}; median time per replay run: ${(medianExperimentMs(runs) / 1000).toFixed(2)} s`);
+  return runs.every((r) => r.match) ? 0 : 1;
+}
+
+const SELFCHECK_HELP = `cage selfcheck [--seed <n>]
+
+Self-validation: records a passing session from examples/shop, injects synthetic
+faults (mutated response fields) with a known hidden cause, uses an oracle that
+fails exactly when that cause is served, and checks explain recovers it.
+
+Example (PowerShell):
+  pnpm test:selfcheck`;
+
+export async function selfcheckCmd(argv: string[]): Promise<number> {
+  const a = parse(argv, { seed: { type: 'string' } }, SELFCHECK_HELP);
+  if (!a) return 0;
+  const browser = await chromium.launch();
+  let runs: SelfcheckRun[];
+  try {
+    runs = await selfcheck(browser, int(a.values.seed, '--seed', 7));
+  } finally {
+    await browser.close();
+  }
+  for (const r of runs) {
+    console.log(`${r.match ? 'ok  ' : 'FAIL'} ${r.name} (${r.experiments} experiments)`);
+    if (!r.match) console.log(`     ${r.verdict}: ${r.reason}\n     expected ${JSON.stringify(r.expected)}\n     got      ${JSON.stringify(r.got)}`);
+  }
+  console.log(`selfcheck: ${runs.filter((r) => r.match).length}/${runs.length}`);
   return runs.every((r) => r.match) ? 0 : 1;
 }

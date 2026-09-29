@@ -3,7 +3,7 @@ import { doctor } from './doctor.ts';
 import { record } from './record.ts';
 import { verify } from './verify.ts';
 import { explainCmd } from './explain.ts';
-import { bench } from './bench.ts';
+import { bench, selfcheckCmd } from './bench.ts';
 import { exportTestCmd, reportCmd, repro } from './repro.ts';
 
 const HELP = `cage: counterfactual minimization for browser bugs
@@ -17,6 +17,7 @@ Commands:
   repro         replay a bundle's minimal failing configuration
   export-test   write a standalone Playwright regression test from a bundle
   bench         score explain against the planted bugs in examples/shop
+  selfcheck     inject synthetic faults with known causes and check explain finds them
 
 Run \`cage <command> --help\` for options and examples.`;
 
@@ -26,6 +27,7 @@ const commands: Record<string, (argv: string[]) => Promise<number>> = {
   verify,
   explain: explainCmd,
   bench,
+  selfcheck: selfcheckCmd,
   report: reportCmd,
   repro,
   'export-test': exportTestCmd,

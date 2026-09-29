@@ -121,9 +121,21 @@ export function score(c: Case, out: Explained): { match: boolean; got: string; e
   return { match, got: gotText, expected: expText };
 }
 
+/** Gate replays (all-observed and all-neutral, 5 runs each): same outcome and same request sequence every run. */
+export function replayConsistent(x: CaseRun): boolean {
+  const gate = x.out.experiments.filter((e) => e.phase === 'gate').slice(0, 2);
+  return gate.every((e) => (e.fails === 0 || e.fails === e.runs) && e.errors === 0 && e.seqHashes.length === 1);
+}
+
+export function medianExperimentMs(runs: CaseRun[]): number {
+  const t = runs.flatMap((x) => x.out.experiments.map((e) => e.wallMs / e.runs)).sort((a, b) => a - b);
+  return t.length ? t[Math.floor(t.length / 2)]! : 0;
+}
+
 export function table(runs: CaseRun[]): string {
-  const rows = runs.map((x) => [x.c.id, x.c.tests, x.expected, x.got, x.match ? 'yes' : 'NO', String(x.out.result.budget.used), `${(x.out.result.wallMs / 1000).toFixed(1)} s`]);
-  const head = ['Bug', 'Tests', 'Expected', 'Got', 'Match', 'Experiments', 'Wall time'];
+  const rows = runs.map((x) => [x.c.id, x.c.tests, x.expected, x.got, x.match ? 'yes' : 'NO', String(x.out.result.budget.used), `${(x.out.result.wallMs / 1000).toFixed(1)} s`, replayConsistent(x) ? 'yes' : 'no']);
+  const head = ['Bug', 'Tests', 'Expected', 'Got', 'Match', 'Experiments', 'Wall time', 'Replay consistent'];
   const esc = (s: string) => s.replace(/\|/g, '\\|');
   return [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.map(esc).join(' | ')} |`)].join('\n');
 }
+export { selfcheck, SELFCHECK_CASES, type SelfcheckRun } from './selfcheck.ts';
