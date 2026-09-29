@@ -5,3 +5,5 @@ export * from './oracle.ts';
 export * from './run.ts';
 export * from './record.ts';
 export * from './replay.ts';
+export * from './factors.ts';
+export * from './compose.ts';

@@ -1,5 +1,4 @@
 // Serves a precomputed Plan to the page: per exchange latency, order gates, fail-closed on unknown requests.
-import type { Session } from './types.ts';
 import type { ApiCall } from './run.ts';
 import { matchesAny } from './url.ts';
 
@@ -26,14 +25,6 @@ const DROP_HEADERS = new Set(['content-length', 'content-encoding', 'transfer-en
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const target = (key: string, nth: number) => `${key}#${nth}`;
-
-export function planFromSession(s: Session): Plan {
-  const responses = new Map<string, Served>();
-  for (const e of s.exchanges) {
-    responses.set(target(e.key, e.nth), { status: e.status, headers: e.headers, body: e.body, bodyEncoding: e.bodyEncoding, latencyMs: e.latencyMs });
-  }
-  return { responses, orders: [] };
-}
 
 export function servingHeaders(h: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(h).filter(([k]) => !DROP_HEADERS.has(k.toLowerCase())));
