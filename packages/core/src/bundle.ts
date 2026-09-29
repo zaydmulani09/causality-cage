@@ -4,6 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import type { Explained } from './explain.ts';
 import { exportTest } from './export.ts';
 import { redact } from './redact.ts';
+import { sentence } from './sentence.ts';
 import { validateAgainst } from './schema.ts';
 import { SCHEMA_VERSION, type Bundle, type ExperimentRecord, type Factor, type FactorNode, type Manifest, type Result, type Session } from './types.ts';
 
@@ -110,6 +111,9 @@ export interface AssembleOptions {
 export function assembleBundle(o: AssembleOptions): Bundle {
   const raw = { bad: o.bad, good: o.good, factors: o.out.factors, tree: o.out.tree, experiments: o.out.experiments, result: o.out.result };
   const { data, report } = o.redact ? redact(raw, o.redactAllow) : { data: raw, report: null };
+  // The sentence quotes (and truncates) factor values. A truncated secret is not caught by the sweep, so the
+  // sentence is rebuilt from the redacted factors and the redacted gate reason.
+  if (o.redact) data.result = { ...data.result, sentence: sentence(data.result, data.factors, data.experiments.find((e) => e.n === 0)?.reason ?? '') };
   return {
     manifest: { schemaVersion: SCHEMA_VERSION, createdAt: new Date().toISOString(), ...o.manifest, redaction: report },
     ...data,

@@ -5,6 +5,7 @@ import { generateSchema, SCHEMA_FILE } from '../../../scripts/gen-schema.ts';
 import { assembleBundle, packBundle, unpackBundle } from '../src/bundle.ts';
 import { extractFactors } from '../src/factors.ts';
 import { redact } from '../src/redact.ts';
+import { sentence } from '../src/sentence.ts';
 import { DEFAULT_ENV } from '../src/run.ts';
 import { validateAgainst } from '../src/schema.ts';
 import type { Exchange, Result, Session } from '../src/types.ts';
@@ -85,6 +86,20 @@ describe('redaction', () => {
     expect(b.manifest.redaction!.emails).toBeGreaterThan(0);
     expect(b.manifest.redaction!.cards).toBeGreaterThan(0);
     expect(b.manifest.redaction!.urlParams).toBe(2);
+  });
+
+  it('does not leak the prefix of a long secret through the truncated verdict sentence', () => {
+    const long = 'sk_live_' + 'Z9x'.repeat(20);
+    const b0 = bundle(false);
+    const bad = { ...b0.bad, storageStart: { ...b0.bad.storageStart, localStorage: { ...b0.bad.storageStart.localStorage, session_key: long } } };
+    const x = extractFactors(bad, b0.good);
+    const f = x.factors.find((k) => k.label === 'storage localStorage session_key')!;
+    const result = { ...b0.result, minimalSets: [[f.id]], truthTable: null };
+    result.sentence = sentence(result, x.factors, '');
+    expect(result.sentence).toContain(long.slice(0, 20)); // unredacted input really does quote a prefix
+    const b = assembleBundle({ out: { ...x, result, experiments: [] }, bad, good: b0.good, manifest: b0.manifest, flowSource: '', oracleSource: null, redact: true });
+    const files = unzipSync(packBundle(b, b.result.sentence));
+    for (const [name, bytes] of Object.entries(files)) expect(strFromU8(bytes).includes(long.slice(0, 16)), name).toBe(false);
   });
 
   it('keeps types, nulls, distinctness and consistency', () => {
