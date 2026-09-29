@@ -27,7 +27,7 @@ plays the toggles on a one second cadence for screen recording.
 From source (Node 20.16+, pnpm). PowerShell:
 
 ```powershell
-git clone <this repository> causality-cage
+git clone https://github.com/zaydmulani09/causality-cage
 cd causality-cage
 pnpm install
 pnpm exec playwright install chromium

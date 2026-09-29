@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +24,7 @@ export interface Shop {
 
 /** Start examples/shop with BUG and SCENARIO. Requires `pnpm shop:build` first. */
 export async function startShop(bug: string, scenario: 'bad' | 'good'): Promise<Shop> {
+  if (!existsSync(SERVER)) throw new Error('bench and selfcheck run the example shop, which ships only in a source checkout: clone https://github.com/zaydmulani09/causality-cage and run pnpm bench there');
   const port = await freePort();
   const child = spawn(process.execPath, [SERVER], { env: { ...process.env, PORT: String(port), BUG: bug, SCENARIO: scenario }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise<void>((res, rej) => {

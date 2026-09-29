@@ -15,12 +15,14 @@
     "test:integration": "pnpm shop:build && playwright test",
     "test:selfcheck": "pnpm shop:build && node packages/cli/bin/cage.mjs selfcheck",
     "cage": "node packages/cli/bin/cage.mjs",
-    "bench": "pnpm shop:build && node packages/cli/bin/cage.mjs bench"
+    "bench": "pnpm shop:build && node packages/cli/bin/cage.mjs bench",
+    "build:npm": "node scripts/build-npm.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
     "@playwright/test": "1.60.0",
     "@types/node": "^22.10.0",
+    "esbuild": "^0.25.12",
     "eslint": "^9.39.0",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

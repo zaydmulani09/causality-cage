@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "author": "Zayd Mulani",
+  "private": true,
   "bin": {
     "cage": "./bin/cage.mjs"
   },

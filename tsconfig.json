@@ -6,5 +6,5 @@
     "allowJs": true
   },
   "include": ["packages/*/src", "packages/*/test", "packages/*/bin", "examples", "scripts", "tests", "*.ts"],
-  "exclude": ["**/node_modules", "**/dist", "**/.cage-out"]
+  "exclude": ["**/node_modules", "**/dist", "**/.cage-out", "dist-npm"]
 }
