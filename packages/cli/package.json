@@ -1,0 +1,16 @@
+{
+  "name": "causality-cage",
+  "version": "0.1.0",
+  "description": "Find the minimal set of conditions that cause a browser bug, by counterfactual replay.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Zayd Mulani",
+  "bin": {
+    "cage": "./bin/cage.mjs"
+  },
+  "dependencies": {
+    "@causality-cage/core": "workspace:*",
+    "playwright": "1.60.0",
+    "tsx": "^4.20.6"
+  }
+}

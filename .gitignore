@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.cage-out/
+test-results/
+playwright-report/
+*.log

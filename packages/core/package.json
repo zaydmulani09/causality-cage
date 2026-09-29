@@ -1,0 +1,15 @@
+{
+  "name": "@causality-cage/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "playwright": "1.60.0",
+    "tsx": "^4.20.6"
+  }
+}
