@@ -23,7 +23,7 @@ export function describe(f: Factor, r?: Result): string {
     case 'order':
       return `${shortTarget(f.target!)} arrives before ${shortTarget(f.target2!)}`;
     case 'presence':
-      return v === true ? `${t} is requested` : `${t} does not complete`;
+      return v === true ? `${t} gets its recorded response` : `${t} fails at the network level`;
     case 'storage':
       return isAbsent(v) ? `${f.area} ${f.path![0]} is absent` : `${f.area} ${f.path![0]} is ${fmt(v)}`;
     case 'cookie':
