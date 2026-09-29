@@ -20,7 +20,7 @@
 
 ## Choices
 
-- **No bundler for the CLI.** `bin/cage.mjs` registers tsx and imports TS sources. Spec suggested esbuild/tsup; skipped — one fewer build step, add bundling when publishing to npm.
+- **No bundler for the CLI.** `bin/cage.mjs` registers tsx and imports TS sources. Spec suggested esbuild/tsup; skipped: one fewer build step, add bundling when publishing to npm.
 - **Arg parsing = `node:util` parseArgs.** No commander/yargs.
 - **Shop mock API = `node:http`**, not Express. Few routes + static files; stdlib covers it.
 - **Report client JS = plain JS with `// @ts-check`**, typechecked by tsc (`checkJs`), inlined as text. No transpile step.

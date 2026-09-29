@@ -49,6 +49,14 @@ Current: DONE (M0-M8 gates passed). Nothing pushed.
 
 - Single-session: requests the failing run never made go live by default (no recording exists); warned + documented; --allow-unmatched restricts. null → "" type default.
 
+## Launch prep (2026-09-29)
+- CI actions: checkout v7, setup-node v7, pnpm/action-setup v6 (verified on each releases page). Committed, not pushed.
+- Real-world run: react-redux-realworld-example-app #187 (stale localStorage JWT). Found in 10 experiments / 14.9 s; exact-error oracle gave the full AND chain in 19 / 19.8 s. launch/real-world.md.
+- Tool bugs found by it, fixed generally: (1) verdict sentence leaked a truncated secret prefix (rebuilt from redacted factors; regression test); (2) presence wording. Also: shop stop() hung after signal kill. Bench re-run after fixes: 10/10.
+- Demo: scripts/record-demo.ts (real run, Playwright recordVideo + ffmpeg-static) → launch/demo.{gif,mp4,png}; launch/og.png from the report SVG (scripts/render-og.ts). CAGE_PROGRESS=1 forces the live line for recorders.
+- CLI version 0.1.1 built in dist-npm/, NOT published (npm 0.1.0 has the redaction leak).
+- Drafts: launch/show-hn.md, x-thread.md, reddit.md. Not posted.
+
 ## Open issues
 - selfcheck seed 11 once stopped at the gate (2 experiments) while a heavy tsc run shared the CPU; 3 later runs of the same seed passed 4/4. Suspect experiment timeouts under CPU contention (latency factors are wall-clock). Not reproduced.
 - B7-style flakes (rate inside the SPRT indifference zone) can still yield a wrong extra OR-set; seen in single-session mode (docs/limits.md).
