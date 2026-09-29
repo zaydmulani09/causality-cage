@@ -13,6 +13,8 @@ export interface Case {
   defect: string;
   oracle: OracleSpec;
   states?: { bad?: InitialState; good?: InitialState };
+  /** the recorded bad session must fail with a reason matching this (default: any failure) */
+  badReason?: string;
   expect: { verdict: Result['verdict']; sets?: string[][]; thresholdMs?: [number, number]; noFailure?: boolean; maxExperiments?: number };
 }
 
@@ -29,14 +31,27 @@ export interface Recorded {
   good: Session;
 }
 
-/** Record the case's bad and good sessions from fresh shop servers. */
+const RECORD_TRIES = 5;
+
+/**
+ * Record the case's bad and good sessions from fresh shop servers, re-recording (like a developer would)
+ * until the bad session shows the failure under study and the good one passes. B0 has no failure: one try.
+ */
 export async function recordCase(c: Case, browser: Browser): Promise<Recorded> {
   const flow = await loadFlow(FLOW);
+  const oracle = await buildOracle(c.oracle);
   const bug = c.bug ?? c.id;
+  const wanted = (scenario: 'bad' | 'good', s: Session) =>
+    scenario === 'good' ? !s.oracle?.failed : !!s.oracle?.failed && (!c.badReason || new RegExp(c.badReason).test(s.oracle.reason ?? ''));
   const rec = async (scenario: 'bad' | 'good') => {
     const shop = await startShop(bug, scenario);
     try {
-      return await recordSession({ browser, baseURL: shop.url, flow, oracle: null, label: scenario, ...(c.states?.[scenario] ? { state: c.states[scenario] } : {}) });
+      let s: Session | undefined;
+      for (let i = 0; i < RECORD_TRIES; i++) {
+        s = await recordSession({ browser, baseURL: shop.url, flow, oracle, label: scenario, ...(c.states?.[scenario] ? { state: c.states[scenario] } : {}) });
+        if (wanted(scenario, s) || c.expect.noFailure) break;
+      }
+      return s!;
     } finally {
       await shop.stop();
     }

@@ -32,6 +32,7 @@ export function stateToSession(state: InitialState = {}) {
 export async function recordSession(o: RecordOptions): Promise<Session> {
   const { env, storage } = stateToSession(o.state);
   const exchanges: Exchange[] = [];
+  const inflight = new Set<Promise<void>>();
   const out = await runFlow({
     browser: o.browser,
     baseURL: o.baseURL,
@@ -41,37 +42,46 @@ export async function recordSession(o: RecordOptions): Promise<Session> {
     oracle: o.oracle,
     apiGlobs: o.apiGlobs ?? [],
     timeoutMs: o.timeoutMs ?? 30_000,
-    onApi: async ({ route, request, key, nth, t, served }) => {
-      const post = request.postDataBuffer();
-      const ex: Exchange = {
-        id: exchanges.length,
-        method: request.method(),
-        url: request.url(),
-        key,
-        nth,
-        reqBodyHash: post ? sha(post) : null,
-        resourceType: request.resourceType(),
-        status: 0,
-        headers: {},
-        body: '',
-        bodyEncoding: 'utf8',
-        startMs: t(),
-        latencyMs: 0,
-        endMs: 0,
-      };
-      exchanges.push(ex);
-      const started = Date.now();
-      const res = await route.fetch();
-      const buf = await res.body();
-      ex.latencyMs = Date.now() - started;
-      ex.status = res.status();
-      ex.headers = res.headers();
-      const texty = TEXTY.test(ex.headers['content-type'] ?? '');
-      ex.body = texty ? buf.toString('utf8') : buf.toString('base64');
-      ex.bodyEncoding = texty ? 'utf8' : 'base64';
-      ex.endMs = t();
-      served({ method: ex.method, url: ex.url, key, status: ex.status, body: texty ? ex.body : '' });
-      await route.fulfill({ response: res, body: buf });
+    // A crashing flow ends early; responses still on the wire are part of what the app got.
+    beforeClose: async () => {
+      await Promise.race([Promise.allSettled([...inflight]), new Promise((r) => setTimeout(r, 15_000))]);
+    },
+    onApi: ({ route, request, key, nth, t, served }) => {
+      const p = handle();
+      inflight.add(p);
+      return p;
+      async function handle() {
+        const post = request.postDataBuffer();
+        const ex: Exchange = {
+          id: exchanges.length,
+          method: request.method(),
+          url: request.url(),
+          key,
+          nth,
+          reqBodyHash: post ? sha(post) : null,
+          resourceType: request.resourceType(),
+          status: 0,
+          headers: {},
+          body: '',
+          bodyEncoding: 'utf8',
+          startMs: t(),
+          latencyMs: 0,
+          endMs: 0,
+        };
+        exchanges.push(ex);
+        const started = Date.now();
+        const res = await route.fetch();
+        const buf = await res.body();
+        ex.latencyMs = Date.now() - started;
+        ex.status = res.status();
+        ex.headers = res.headers();
+        const texty = TEXTY.test(ex.headers['content-type'] ?? '');
+        ex.body = texty ? buf.toString('utf8') : buf.toString('base64');
+        ex.bodyEncoding = texty ? 'utf8' : 'base64';
+        ex.endMs = t();
+        served({ method: ex.method, url: ex.url, key, status: ex.status, body: texty ? ex.body : '' });
+        await route.fulfill({ response: res, body: buf });
+      }
     },
   });
   if (out.infraError) throw new Error(`recording failed: ${out.infraError}`);

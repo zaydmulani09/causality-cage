@@ -34,6 +34,8 @@ export interface RunInput {
   freezeRandom?: boolean;
   freezeTime?: boolean;
   headed?: boolean;
+  /** awaited after the oracle, before the context closes (recording drains in-flight exchanges) */
+  beforeClose?: () => Promise<void>;
 }
 
 export interface RunOutput {
@@ -136,6 +138,7 @@ export async function runFlow(input: RunInput): Promise<RunOutput> {
     if (out === 'timeout') {
       return { failed: false, infraError: `experiment exceeded ${input.timeoutMs} ms`, consoleErrors, pageErrors, requests, seqHash: sha(seq.join('\n')), storageEnd: EMPTY_STORAGE };
     }
+    await input.beforeClose?.();
     const storageEnd = await snapshot(page, context);
     return { ...out, consoleErrors, pageErrors, requests, seqHash: sha(seq.join('\n')), storageEnd };
   } finally {

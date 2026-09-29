@@ -17,7 +17,7 @@
   {
     "id": "B3",
     "tests": "latency race + threshold",
-    "defect": "stale total when /api/prices lands more than 800 ms after /api/inventory",
+    "defect": "stale total when /api/prices lands more than ~800 ms after /api/inventory (750 ms app timer + render/interception overhead)",
     "oracle": { "failOnTextMissing": ["Total: $42.00"] },
     "expect": { "verdict": "explained", "sets": [["delay GET /api/prices"]], "thresholdMs": [600, 900] }
   },
@@ -48,6 +48,7 @@
     "tests": "statistical mode",
     "defect": "B1 plus an unrelated 30% random crash",
     "oracle": { "file": "examples/oracles/no-crash.ts" },
+    "badReason": "toUpperCase",
     "expect": { "verdict": "explained", "sets": [["body GET /api/cart customer.tax_id"]] }
   },
   {

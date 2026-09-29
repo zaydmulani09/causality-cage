@@ -43,6 +43,8 @@ export interface TestOptions {
   /** run exactly this many times (deterministic mode) and never memoize */
   runs?: number;
   fresh?: boolean;
+  /** statistical mode: runs already made for this config; the SPRT continues from them */
+  prior?: { runs: number; fails: number };
 }
 
 export class Lab {
@@ -132,6 +134,7 @@ export class Lab {
       const fails = results.filter((r) => r.outcome === 'FAIL').length;
       return { errors, fails, valid: results.length - errors };
     };
+    const prior = opts.prior ?? { runs: 0, fails: 0 };
     let decision: Decision;
     if (opts.runs) {
       results.push(...(await Promise.all(Array.from({ length: opts.runs }, () => this.runOnce(cfg)))));
@@ -149,7 +152,7 @@ export class Lab {
           decision = 'ERROR';
           break;
         }
-        const d = sprt(fails, valid);
+        const d = sprt(fails + prior.fails, valid + prior.runs);
         if (d !== 'CONTINUE') {
           decision = d;
           break;

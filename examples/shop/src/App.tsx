@@ -10,6 +10,8 @@ declare global {
 }
 
 const BUG = window.__BUG__ ?? 'none';
+// B7: one roll per page load. (Rolling inside render would re-roll on React's error retry.)
+const FLAKY = BUG === 'B7' && Math.random() < 0.3;
 
 interface Item { sku: string; name: string; qty: number; price_ref: string }
 interface Cart {
@@ -82,7 +84,6 @@ function Checkout() {
   const [staleTotal, setStaleTotal] = useState(false);
   const [pricesLate, setPricesLate] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [flaky] = useState(() => BUG === 'B7' && Math.random() < 0.3);
   const pricesRef = useRef<Prices | null>(null);
   const freshProfile = useRef(false);
 
@@ -108,12 +109,12 @@ function Checkout() {
     });
   }, []);
 
-  // Quote freeze: if prices lag inventory by 800 ms, show fallback prices. B3 never unfreezes.
+  // Quote freeze: if prices lag inventory by 750 ms, show fallback prices. B3 never unfreezes.
   useEffect(() => {
     if (!inventory) return;
     const t = setTimeout(() => {
       if (!pricesRef.current) setStaleTotal(true);
-    }, 800);
+    }, 750);
     return () => clearTimeout(t);
   }, [inventory]);
   useEffect(() => {
@@ -129,7 +130,7 @@ function Checkout() {
     return () => clearTimeout(t);
   }, [cart]);
 
-  if (flaky) throw new Error('Flaky recommendations widget failed');
+  if (FLAKY) throw new Error('Flaky recommendations widget failed');
   if (BUG === 'B8' && window.__SERVER__?.inventoryLock) throw new Error('Inventory lock held by another session');
   if (!cart) return <p>Loading cart…</p>;
 

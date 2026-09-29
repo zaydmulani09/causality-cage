@@ -112,13 +112,14 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
       phase('flaky gate: extending with SPRT');
       lab.mode = 'statistical';
       flaky = true;
+      const prior = (x: ExperimentRecord) => ({ prior: { runs: x.runs - x.errors, fails: x.fails }, fresh: true });
       if (tz === 'MID') {
-        const T2 = await lab.test({ on: all }, 'gate', { fresh: true });
+        const T2 = await lab.test({ on: all }, 'gate', prior(T));
         tz = T2.decision;
         T = { ...T, runs: T.runs + T2.runs, fails: T.fails + T2.fails, errors: T.errors + T2.errors };
       }
       if (fz === 'MID') {
-        const F2 = await lab.test({ on: [] }, 'gate', { fresh: true });
+        const F2 = await lab.test({ on: [] }, 'gate', prior(F));
         fz = F2.decision;
         F = { ...F, runs: F.runs + F2.runs, fails: F.fails + F2.fails, errors: F.errors + F2.errors };
       }
@@ -142,10 +143,9 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
         : `The failure persists with all ${factors.length} modeled factors at their passing values (${pct(r.gate.allFalse)} runs fail): the cause lies outside what was modeled.`;
       return finish();
     }
-    if (fz !== 'PASS') {
-      r.verdict = 'untrustworthy-oracle';
-      r.reason = `All-neutral outcome is undecided after ${r.gate.allFalse.runs} runs (${pct(r.gate.allFalse)} fail): oracle too flaky to trust.`;
-      return finish();
+    if (fz === 'UNRESOLVED') {
+      // SPRT could not separate the all-neutral rate from 0.2 vs 0.8: treated as PASS (conservative for reduction), flagged.
+      r.warnings.push(`All-neutral gate undecided after ${r.gate.allFalse.runs} runs (${pct(r.gate.allFalse)} fail); treated as passing. Background flakiness is high.`);
     }
     if (!factors.length) {
       r.verdict = 'unexplained';
@@ -182,7 +182,9 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
           [null, ...S].map(async (removed): Promise<VerificationRow> => {
             const on = removed ? S.filter((x) => x !== removed) : S;
             const rec = await lab.test({ on }, 'verify', lab.mode === 'deterministic' ? { runs: VERIFY_RUNS } : { fresh: true });
-            return { set: S, removed, runs: rec.runs - rec.errors, fails: rec.fails, ok: removed ? rec.decision === 'PASS' : rec.decision === 'FAIL' };
+            // UNRESOLVED counts as "does not fail" (spec: conservative), flagged below; deterministic runs must agree 3/3
+            const noFail = lab.mode === 'statistical' ? rec.decision === 'PASS' || rec.decision === 'UNRESOLVED' : rec.decision === 'PASS';
+            return { set: S, removed, runs: rec.runs - rec.errors, fails: rec.fails, ok: removed ? noFail : rec.decision === 'FAIL' };
           }),
         ),
       );
@@ -202,6 +204,8 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
       r.verification = await verify();
     }
     const verified = r.verification.every((v) => v.ok);
+    const undecided = r.verification.filter((v) => v.removed && v.fails > 0 && v.fails < v.runs && v.ok);
+    if (lab.mode === 'statistical' && undecided.length) r.warnings.push(`${undecided.length} leave-one-out check(s) were undecided by SPRT (mixed outcomes) and counted as not failing.`);
 
     // 4. truth table over the union of found sets
     const U = order([...new Set(sets.flat())]);

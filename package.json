@@ -22,6 +22,7 @@
     "@playwright/test": "1.60.0",
     "@types/node": "^22.10.0",
     "eslint": "^9.39.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.0",
     "vitest": "^3.2.4"
