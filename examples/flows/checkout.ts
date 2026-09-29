@@ -1,4 +1,4 @@
-import type { Page } from 'playwright';
+import type { Page } from '@playwright/test';
 
 // Home → Checkout → Place order. Returns early if the app shows its error boundary.
 export default async function flow({ page, baseURL }: { page: Page; baseURL: string }): Promise<void> {

@@ -1,4 +1,4 @@
-import type { Page } from 'playwright';
+import type { Page } from '@playwright/test';
 
 // Fails on uncaught errors or when the app's error boundary is showing.
 export default async function oracle({ page, pageErrors }: { page: Page; pageErrors: string[] }) {

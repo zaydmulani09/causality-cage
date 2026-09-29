@@ -6,10 +6,8 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', window: 'readonly', document: 'readonly' },
-    },
     rules: {
+      'no-undef': 'off', // TypeScript checks this
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
