@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current: M8 bench/docs/launch.
+Current: DONE (M0-M8 gates passed). Nothing pushed.
 
 ## Skills
 - /caveman ultra + /ponytail ultra loaded (found, both).
@@ -18,7 +18,7 @@ Current: M8 bench/docs/launch.
 | M5 bundle/redact/repro | PASS | unit: round trip (write/read zip deepEqual), 9 planted secrets (JWT, token, email, card, cookie, storage key, URL param, console error, sentence) absent from every zipped file, type/null/consistency preserved, schema file == regenerated from types.ts, malformed files rejected with paths. Integration tests/integration/export.spec.ts: real B1 bundle round trip; exported spec exits non-zero on BUG=B1 ("the failure still reproduces"), 0 on BUG=none. cage repro: minimal set FAIL, --set all=neutral PASS |
 | M6 report | PASS | tests/integration/report.spec.ts on a real demo-scenario bundle (6/6): file:// with non-file requests aborted → 0 network requests; clicking/Enter on factors matches embedded truth table (FAIL → NO FAILURE → FAIL); 375 px: scrollWidth <= clientWidth, vertical graph shown; WCAG contrast >= 4.5 for fg/muted/fail/pass/warn/accent pairs and >= 7 body text, light + dark; ?demo=1 autoplay. Visual check via headless screenshots light/dark/phone |
 | M7 single-session | PASS | cage bench --only B1,B5 --synthesize-good: 2/2 exact (B1 27 experiments/75 factors, B5 22/76). CLI prints EXPERIMENTAL banner; report + result carry singleSession + warning. Full single-session bench 5/10, failures analysed in docs/limits.md |
-| M8 bench/docs | todo | |
+| M8 bench/docs | PASS | fresh clone (git clone . tmp): pnpm install + pnpm check (31 unit tests) + pnpm bench → 10/10 exact, exit 0, pasted verbatim in README. B5 19 experiments at c=4 (<=60). Replay consistent on every non-flaky row. Median time per replay run 0.60 s (<3 s); B1 explain 4.8 s (<3 min). pnpm test:integration 7/7. pnpm test:selfcheck 4/4 on seeds 7, 11, 3. scripts/check-links.mjs: 14/14 README links resolve. demo.ps1 and demo.sh run end to end. README quickstart (B2) re-run: explained, exit 0 |
 
 ## Deviations
 - No CLI bundler (tsx runtime). See docs/decisions.md.
@@ -50,4 +50,7 @@ Current: M8 bench/docs/launch.
 - Single-session: requests the failing run never made go live by default (no recording exists); warned + documented; --allow-unmatched restricts. null → "" type default.
 
 ## Open issues
-- none
+- selfcheck seed 11 once stopped at the gate (2 experiments) while a heavy tsc run shared the CPU; 3 later runs of the same seed passed 4/4. Suspect experiment timeouts under CPU contention (latency factors are wall-clock). Not reproduced.
+- B7-style flakes (rate inside the SPRT indifference zone) can still yield a wrong extra OR-set; seen in single-session mode (docs/limits.md).
+- Not published to npm; no bundling yet (tsx runtime).
+- CI workflow written, not enabled or pushed.

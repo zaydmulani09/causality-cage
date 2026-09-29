@@ -4,10 +4,14 @@
 
 ```text
 > cage explain --flow flows/checkout.ts --oracle oracles/no-crash.ts --bad sessions/bad.json --good sessions/good.json
-EXPLAINED  The failure ("Something went wrong: Cannot read properties of null (reading 'slice')") happens only when
-GET /api/cart returns customer.tax_id = null AND GET /api/prices takes longer than ~774 ms.
-Removing any one of them prevents it. (31 experiments.)
+EXPLAINED  The failure ("Something went wrong: Cannot read properties of null (reading 'slice')") happens only when GET /api/cart returns customer.tax_id = null AND GET /api/prices takes longer than ~731 ms. Removing any one of them prevents it. (31 experiments.)
+  set 1 (AND): body GET /api/cart customer.tax_id  +  delay GET /api/prices
+  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 2 factors; 31/500 experiments; 29.0 s
+  bundle result.cage, report result.html
 ```
+
+(Transcript of one `scripts/demo.ps1` run. The flip point moves by tens of milliseconds between runs: the bench's
+`demo` row below measured 728 ms. The app's planted threshold is a 700 ms timer.)
 
 ## The 10 second demo
 
@@ -113,7 +117,28 @@ cage is complementary: it answers *which inputs* make the app fail, not *which l
 
 ## Measured: `pnpm bench`
 
-BENCH_PLACEHOLDER
+Fresh clone, `pnpm install && pnpm check && pnpm bench`, 2026-09-29, Windows 11, Node 24.14, Chromium 148 (Playwright 1.60). Pasted verbatim:
+
+```text
+cage bench, concurrency 4, budget 500
+
+| Bug | Tests | Expected | Got | Match | Experiments | Wall time | Replay consistent |
+|---|---|---|---|---|---|---|---|
+| B1 | single cause | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 11 | 4.8 s | yes |
+| B2 | conjunction | {body GET /api/cart discount.code + storage localStorage exp_assignment} | {body GET /api/cart discount.code + storage localStorage exp_assignment} | yes | 16 | 4.7 s | yes |
+| B3 | latency race + threshold | {delay GET /api/prices} @ 600-900 ms | {delay GET /api/prices} @ 778 ms | yes | 20 | 26.0 s | yes |
+| B4 | ordering | {order GET /api/profile before GET /api/profile-cache} | {order GET /api/profile before GET /api/profile-cache} | yes | 4 | 3.3 s | yes |
+| B5 | HDD efficiency | {body GET /api/cart currency} | {body GET /api/cart currency} | yes | 19 | 6.8 s | yes |
+| B6 | OR structure | {cookie locale} OR {header GET /api/cart x-region} | {cookie locale} OR {header GET /api/cart x-region} | yes | 12 | 4.1 s | yes |
+| B7 | statistical mode | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 12 | 9.3 s | no |
+| B8 | honesty | unexplained | unexplained | yes | 2 | 1.1 s | yes |
+| B0 | control | no failure | no failure | yes | 2 | 1.3 s | yes |
+| demo | demo: AND of body + latency | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 600-850 ms | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 728 ms | yes | 31 | 25.2 s | yes |
+
+exact match: 10/10; median time per replay run: 0.60 s
+```
+
+Each row records a failing and a passing session from fresh shop servers, then runs `explain` against the live app. *Experiments* counts every replayed configuration (gate, search, verification, truth table, variants, latency grid). *Replay consistent*: the gate's 5 all-observed and 5 all-neutral replays each gave one outcome and one request sequence; B7 is flaky by design (a planted 30% random crash) and ran in statistical mode. Ground truth: [packages/bench/ground-truth.json](packages/bench/ground-truth.json).
 
 ## Development
 

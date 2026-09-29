@@ -93,5 +93,5 @@ The sentence at the top of the report is filled from a template. No language mod
 ## References
 
 - Andreas Zeller and Ralf Hildebrandt. Simplifying and Isolating Failure-Inducing Input. IEEE Transactions on Software Engineering 28(2), 183-200, 2002. [doi:10.1109/32.988498](https://doi.org/10.1109/32.988498)
-- Ghassan Misherghi and Zhendong Su. HDD: Hierarchical Delta Debugging. ICSE 2006, 142-151. [doi:10.1145/1134285.1134307](https://doi.org/10.1145/1134285.1134307)
+- Ghassan Misherghi and Zhendong Su. HDD: Hierarchical Delta Debugging. ICSE 2006, 142-151. doi:10.1145/1134285.1134307 ([dblp record](https://dblp.org/rec/conf/icse/Misherghi06.html))
 - Abraham Wald. Sequential Tests of Statistical Hypotheses. Annals of Mathematical Statistics 16(2), 117-186, 1945. [doi:10.1214/aoms/1177731118](https://doi.org/10.1214/aoms/1177731118)
