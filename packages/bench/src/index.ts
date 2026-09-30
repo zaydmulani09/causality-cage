@@ -15,6 +15,8 @@ export interface Case {
   states?: { bad?: InitialState; good?: InitialState };
   /** the recorded bad session must fail with a reason matching this (default: any failure) */
   badReason?: string;
+  /** run explain with --loose-oracle (the case defines the failure as any crash) */
+  looseOracle?: boolean;
   expect: { verdict: Result['verdict']; sets?: string[][]; thresholdMs?: [number, number]; noFailure?: boolean; maxExperiments?: number };
 }
 
@@ -88,6 +90,7 @@ export async function runCase(c: Case, browser: Browser, o: BenchOptions = {}): 
       bad: recorded.bad,
       good: o.synthesize ? o.synthesize(recorded.bad) : recorded.good,
       singleSession: !!o.synthesize,
+      looseOracle: !!c.looseOracle,
       concurrency: o.concurrency ?? 4,
       budget: o.budget ?? 500,
       ...(o.onPhase ? { onPhase: o.onPhase } : {}),

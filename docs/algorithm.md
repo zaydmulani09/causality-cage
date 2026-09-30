@@ -38,6 +38,14 @@ All observed and none observed are each replayed 5 times.
 - Perfect agreement (5/5 and 0/5) selects **deterministic mode**: one run per experiment.
 - Anything else selects **statistical mode**; rates in the middle band are extended with the SPRT below, continuing from the gate's own runs.
 
+**Failure signatures** (default since 0.1.2). All observed runs first, and each failing run's oracle reason is
+normalized (URLs, ids, hashes and numbers stripped; uncaught errors keep their type). The target signature is the bad
+session's recorded failure if these replays show it, else the most common one. From then on a run that fails with
+another signature is `DIFFERENT_FAILURE`: it never counts as reproducing the bug, and it is censored (left out of fail
+rates and of the SPRT, like an infrastructure error), because a failure that happened first hides whether the target
+would have. A gate judged on fewer than 3 informative runs is extended with the SPRT. `--loose-oracle` turns all of
+this off: any failure counts.
+
 ## 3. Search: ddmin and hierarchical delta debugging
 
 `ddmin` (Zeller and Hildebrandt 2002) finds a subset of factors that still fails and is **1-minimal**:

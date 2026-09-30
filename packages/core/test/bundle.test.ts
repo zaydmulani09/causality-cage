@@ -50,6 +50,8 @@ function bundle(doRedact: boolean) {
     sentence: 'The failure happens when GET /api/cart returns auth_token = "tok_live_9f8e7d6c5b4a" (mail ada.lovelace@example.com).',
     mode: 'deterministic',
     singleSession: false,
+    signature: null,
+    looseOracle: false,
     gate: { allTrue: { runs: 5, fails: 5 }, allFalse: { runs: 5, fails: 0 } },
     factorCount: x.factors.length,
     minimalSets: [[tokenFactor]],

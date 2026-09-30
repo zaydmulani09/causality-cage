@@ -10,12 +10,13 @@
 > cage explain --flow flows/checkout.ts --oracle oracles/no-crash.ts --bad sessions/bad.json --good sessions/good.json
 EXPLAINED  The failure ("Something went wrong: Cannot read properties of null (reading 'slice')") happens only when GET /api/cart returns customer.tax_id = null AND GET /api/prices takes longer than ~731 ms. Removing any one of them prevents it. (31 experiments.)
   set 1 (AND): body GET /api/cart customer.tax_id  +  delay GET /api/prices
-  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 2 factors; 31/500 experiments; 29.0 s
+  failure signature: Something went wrong: Cannot read properties of null (reading 'slice')
+  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 2 factors; 31/500 experiments; 31.3 s
   bundle result.cage, report result.html
 ```
 
-(Transcript of one `scripts/demo.ps1` run. The flip point moves by tens of milliseconds between runs: the bench's
-`demo` row below measured 765 ms. The app's planted threshold is a 700 ms timer.)
+(Transcript of one `scripts/demo.sh` run with 0.1.2. The flip point moves by tens of milliseconds between runs: the
+bench's `demo` row below measured 724 ms. The app's planted threshold is a 700 ms timer.)
 
 ## The 10 second demo
 
@@ -31,10 +32,11 @@ plays the toggles on a one second cadence for screen recording.
 [gothinkster/react-redux-realworld-example-app#187](https://github.com/gothinkster/react-redux-realworld-example-app/issues/187):
 the RealWorld React frontend crashed with `Cannot read property 'tags' of undefined`, and the reporter found a stale
 token left in localStorage by another backend. On the issue's exact commit, with a JWT this API never issued in
-`localStorage.jwt`, `cage explain` named `storage localStorage jwt` as the single cause in 10 experiments (14.9 s).
-With an oracle that only accepts the issue's exact error, it returned the full chain: the stale token AND the API
-rejecting `/user` and `/articles/feed`. The run also exposed two bugs in cage, both fixed. Everything that was run,
-the raw output, and the caveats: [launch/real-world.md](launch/real-world.md).
+`localStorage.jwt`, `cage explain` (0.1.2, default settings) returned the full chain behind that: the stale token AND
+the API rejecting `/user` and `/articles/feed`, in 19 experiments (25.1 s). With `--loose-oracle` it named the stale
+token alone, in 10 experiments (16.9 s). This case is also what exposed a redaction leak and the need for failure
+signatures; both are fixed. Everything that was run, the raw output, and the caveats:
+[launch/real-world.md](launch/real-world.md).
 
 ## Install
 
@@ -95,6 +97,11 @@ Then:
 | `cage export-test result.cage --out repro` | standalone Playwright test (fails until the bug is fixed; `--expect broken` inverts) |
 | `cage bench`, `cage selfcheck` | the measurements below |
 
+**Same failure, not just any failure.** When the bad session fails, cage takes a signature of that failure (the
+oracle's reason, with URLs, ids, hashes and numbers stripped). A replay only counts as reproducing the bug if it
+fails with that signature; any other failure is reported as `DIFFERENT_FAILURE`. `--loose-oracle` counts any failure.
+The CLI summary and the report show the signature.
+
 Exit codes: 0 explained, 2 partial, 3 unexplained, 4 untrustworthy oracle, 1 tool error.
 
 ## How it works
@@ -140,28 +147,30 @@ cage is complementary: it answers *which inputs* make the app fail, not *which l
 
 ## Measured: `pnpm bench`
 
-`pnpm bench`, 2026-09-29, Windows 11, Node 24.14, Chromium 148 (Playwright 1.60), after the fixes from the real-world run. Pasted verbatim:
+`pnpm bench`, 2026-09-29, Windows 11, Node 24.14, Chromium 148 (Playwright 1.60), causality-cage 0.1.2. Pasted verbatim:
 
 ```text
 cage bench, concurrency 4, budget 500
 
 | Bug | Tests | Expected | Got | Match | Experiments | Wall time | Replay consistent |
 |---|---|---|---|---|---|---|---|
-| B1 | single cause | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 11 | 5.2 s | yes |
-| B2 | conjunction | {body GET /api/cart discount.code + storage localStorage exp_assignment} | {body GET /api/cart discount.code + storage localStorage exp_assignment} | yes | 16 | 8.2 s | yes |
-| B3 | latency race + threshold | {delay GET /api/prices} @ 600-900 ms | {delay GET /api/prices} @ 790 ms | yes | 20 | 29.6 s | yes |
-| B4 | ordering | {order GET /api/profile before GET /api/profile-cache} | {order GET /api/profile before GET /api/profile-cache} | yes | 4 | 4.7 s | yes |
+| B1 | single cause | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 11 | 4.5 s | yes |
+| B2 | conjunction | {body GET /api/cart discount.code + storage localStorage exp_assignment} | {body GET /api/cart discount.code + storage localStorage exp_assignment} | yes | 16 | 7.9 s | yes |
+| B3 | latency race + threshold | {delay GET /api/prices} @ 600-900 ms | {delay GET /api/prices} @ 808 ms | yes | 20 | 32.1 s | yes |
+| B4 | ordering | {order GET /api/profile before GET /api/profile-cache} | {order GET /api/profile before GET /api/profile-cache} | yes | 4 | 5.1 s | yes |
 | B5 | HDD efficiency | {body GET /api/cart currency} | {body GET /api/cart currency} | yes | 19 | 8.3 s | yes |
-| B6 | OR structure | {cookie locale} OR {header GET /api/cart x-region} | {cookie locale} OR {header GET /api/cart x-region} | yes | 12 | 6.0 s | yes |
-| B7 | statistical mode | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 11 | 11.0 s | no |
-| B8 | honesty | unexplained | unexplained | yes | 2 | 1.8 s | yes |
-| B0 | control | no failure | no failure | yes | 2 | 2.4 s | yes |
-| demo | demo: AND of body + latency | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 600-850 ms | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 765 ms | yes | 31 | 33.7 s | yes |
+| B6 | OR structure (loose oracle) | {cookie locale} OR {header GET /api/cart x-region} | {cookie locale} OR {header GET /api/cart x-region} | yes | 12 | 5.3 s | yes |
+| B7 | statistical mode | {body GET /api/cart customer.tax_id} | {body GET /api/cart customer.tax_id} | yes | 11 | 12.3 s | no |
+| B8 | honesty | unexplained | unexplained | yes | 2 | 1.6 s | yes |
+| B0 | control | no failure | no failure | yes | 2 | 2.3 s | yes |
+| demo | demo: AND of body + latency | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 600-850 ms | {body GET /api/cart customer.tax_id + delay GET /api/prices} @ 724 ms | yes | 31 | 30.3 s | yes |
 
-exact match: 10/10; median time per replay run: 0.92 s
+exact match: 10/10; median time per replay run: 0.75 s
 ```
 
-Each row records a failing and a passing session from fresh shop servers, then runs `explain` against the live app. *Experiments* counts every replayed configuration (gate, search, verification, truth table, variants, latency grid). *Replay consistent*: the gate's 5 all-observed and 5 all-neutral replays each gave one outcome and one request sequence; B7 is flaky by design (a planted 30% random crash) and ran in statistical mode. Ground truth: [packages/bench/ground-truth.json](packages/bench/ground-truth.json).
+Each row records a failing and a passing session from fresh shop servers, then runs `explain` against the live app. *Experiments* counts every replayed configuration (gate, search, verification, truth table, variants, latency grid). *Replay consistent*: the gate's 5 all-observed and 5 all-neutral replays each gave one outcome and one request sequence; B7 is flaky by design (a planted 30% random crash) and ran in statistical mode.
+
+**B6 runs with `--loose-oracle`** (marked in its row). Its two planted causes crash with different messages, and the case counts any crash. With the default failure-signature matching, B6 reports only `{header GET /api/cart x-region}` (8 experiments, signature ending in `(reading 'vat')`), because the cookie cause crashes with `(reading 'greeting')`: a different failure. Ground truth: [packages/bench/ground-truth.json](packages/bench/ground-truth.json).
 
 ## Development
 

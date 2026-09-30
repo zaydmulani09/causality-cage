@@ -4,6 +4,7 @@ import { deepEqual, extractFactors, type Extracted } from './factors.ts';
 import { BudgetExhausted, Lab } from './lab.ts';
 import type { FlowFn, OracleFn } from './oracle.ts';
 import { hdd, pruneTree } from './search.ts';
+import { decideFixed, pickSignature } from './signature.ts';
 import { sentence } from './sentence.ts';
 import { ABSENT, type DelayCurve, type ExperimentRecord, type Factor, type FactorValue, type Result, type Session, type Structure, type TruthRow, type VariantProbe, type VerificationRow } from './types.ts';
 
@@ -24,6 +25,8 @@ export interface ExplainOptions {
   freezeTime?: boolean;
   maxFactors?: number;
   singleSession?: boolean;
+  /** count any failure, not only the bad session's failure signature */
+  looseOracle?: boolean;
   onRecord?: (r: ExperimentRecord) => void;
   onPhase?: (msg: string) => void;
 }
@@ -39,7 +42,8 @@ const VERIFY_RUNS = 3;
 const GRID_POINTS = 10;
 const GRID_RUNS = 3;
 
-const rate = (r: { runs: number; fails: number; errors: number }) => r.fails / Math.max(1, r.runs - r.errors);
+/** failure rate over informative runs (infrastructure errors and different failures are censored) */
+const rate = (r: { runs: number; fails: number; errors: number; different?: number }) => r.fails / Math.max(1, r.runs - r.errors - (r.different ?? 0));
 
 export async function explain(o: ExplainOptions): Promise<Explained> {
   const t0 = Date.now();
@@ -68,6 +72,7 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
     apiGlobs: o.apiGlobs ?? [],
     freezeRandom: !!o.freezeRandom,
     freezeTime: !!o.freezeTime,
+    looseOracle: !!o.looseOracle,
     ...(o.onRecord ? { onRecord: o.onRecord } : {}),
   });
   const phase = (m: string) => o.onPhase?.(m);
@@ -78,6 +83,8 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
     sentence: '',
     mode: 'deterministic',
     singleSession: !!o.singleSession,
+    signature: null,
+    looseOracle: !!o.looseOracle,
     gate: { allTrue: { runs: 0, fails: 0 }, allFalse: { runs: 0, fails: 0 } },
     factorCount: factors.length,
     minimalSets: [],
@@ -106,27 +113,43 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
     // 1. determinism gate
     phase('determinism gate');
     const k = o.gateRuns ?? 5;
-    let [T, F] = await Promise.all([lab.test({ on: all }, 'gate', { runs: k }), lab.test({ on: [] }, 'gate', { runs: k })]);
-    failReason = T.reason ?? '';
-    const tally = (...rs: ExperimentRecord[]) => ({ runs: rs.reduce((s, x) => s + x.runs - x.errors, 0), fails: rs.reduce((s, x) => s + x.fails, 0) });
-    let flaky = T.fails !== T.runs - T.errors || F.fails !== 0;
-    const zone = (x: ExperimentRecord) => (x.errors * 2 > x.runs ? 'ERROR' : rate(x) >= 0.8 ? 'FAIL' : rate(x) <= 0.2 ? 'PASS' : 'MID');
+    // All-observed first: its failures define the target signature (the bad session's own, if the replays show it).
+    let T = await lab.test({ on: all }, 'gate', { runs: k });
+    if (!o.looseOracle) {
+      lab.signature = pickSignature(T.failureSignatures ?? {}, o.bad.oracle?.reason);
+      if (lab.signature) {
+        const total = Object.values(T.failureSignatures ?? {}).reduce((s, n) => s + n, 0);
+        const fails = T.failureSignatures![lab.signature]!;
+        Object.assign(T, { fails, different: total - fails, decision: decideFixed({ runs: T.runs, errors: T.errors, fails, different: total - fails }) });
+        if (!T.different) delete T.different;
+      }
+    }
+    r.signature = lab.signature;
+    failReason = (lab.signature && lab.examples.get(lab.signature)) || T.reason || '';
+    let F = await lab.test({ on: [] }, 'gate', { runs: k });
+    const tally = (x: ExperimentRecord) => ({ runs: x.runs - x.errors - (x.different ?? 0), fails: x.fails, ...(x.different ? { different: x.different } : {}) });
+    let flaky = T.fails !== T.runs - T.errors || F.fails !== 0 || !!F.different;
+    // fewer than 3 informative runs (the rest errored or failed differently) is too little to judge: extend with SPRT
+    const informative = (x: ExperimentRecord) => x.runs - x.errors - (x.different ?? 0);
+    const zone = (x: ExperimentRecord) =>
+      x.errors * 2 > x.runs ? 'ERROR' : informative(x) < 3 && x.different ? 'MID' : rate(x) >= 0.8 ? 'FAIL' : rate(x) <= 0.2 ? 'PASS' : 'MID';
     let tz = zone(T);
     let fz = zone(F);
     if (tz === 'MID' || fz === 'MID') {
       phase('flaky gate: extending with SPRT');
       lab.mode = 'statistical';
       flaky = true;
-      const prior = (x: ExperimentRecord) => ({ prior: { runs: x.runs - x.errors, fails: x.fails }, fresh: true });
+      const prior = (x: ExperimentRecord) => ({ prior: { runs: x.runs - x.errors - (x.different ?? 0), fails: x.fails }, fresh: true });
+      const merge = (a: ExperimentRecord, b: ExperimentRecord) => ({ ...a, runs: a.runs + b.runs, fails: a.fails + b.fails, errors: a.errors + b.errors, different: (a.different ?? 0) + (b.different ?? 0) });
       if (tz === 'MID') {
         const T2 = await lab.test({ on: all }, 'gate', prior(T));
         tz = T2.decision;
-        T = { ...T, runs: T.runs + T2.runs, fails: T.fails + T2.fails, errors: T.errors + T2.errors };
+        T = merge(T, T2);
       }
       if (fz === 'MID') {
         const F2 = await lab.test({ on: [] }, 'gate', prior(F));
         fz = F2.decision;
-        F = { ...F, runs: F.runs + F2.runs, fails: F.fails + F2.fails, errors: F.errors + F2.errors };
+        F = merge(F, F2);
       }
     }
     r.gate = { allTrue: tally(T), allFalse: tally(F) };
@@ -180,6 +203,7 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
         if ((await lab.test({ on: remaining }, 'search')).decision !== 'FAIL') break;
       }
     };
+    const differentOnRemoval = new Set<string>();
     const verify = async () => {
       phase('verifying necessity and sufficiency');
       const rows = await Promise.all(
@@ -188,7 +212,9 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
             const on = removed ? S.filter((x) => x !== removed) : S;
             const rec = await lab.test({ on }, 'verify', lab.mode === 'deterministic' ? { runs: VERIFY_RUNS } : { fresh: true });
             // UNRESOLVED counts as "does not fail" (spec: conservative), flagged below; deterministic runs must agree 3/3
-            const noFail = lab.mode === 'statistical' ? rec.decision === 'PASS' || rec.decision === 'UNRESOLVED' : rec.decision === 'PASS';
+            // a different failure still means the target failure stopped
+            const noFail = rec.decision === 'PASS' || rec.decision === 'DIFFERENT_FAILURE' || (lab.mode === 'statistical' && rec.decision === 'UNRESOLVED');
+            if (removed && rec.decision === 'DIFFERENT_FAILURE') differentOnRemoval.add(removed);
             return { set: S, removed, runs: rec.runs - rec.errors, fails: rec.fails, ok: removed ? noFail : rec.decision === 'FAIL' };
           }),
         ),
@@ -209,6 +235,7 @@ export async function explain(o: ExplainOptions): Promise<Explained> {
       r.verification = await verify();
     }
     const verified = r.verification.every((v) => v.ok);
+    for (const id of differentOnRemoval) r.warnings.push(`Without ${byId.get(id)!.label} the page still fails, but with a different failure than the bad session's.`);
     const undecided = r.verification.filter((v) => v.removed && v.fails > 0 && v.fails < v.runs && v.ok);
     if (lab.mode === 'statistical' && undecided.length) r.warnings.push(`${undecided.length} leave-one-out check(s) were undecided by SPRT (mixed outcomes) and counted as not failing.`);
 

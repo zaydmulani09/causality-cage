@@ -1,6 +1,6 @@
 {
   "name": "causality-cage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Find the minimal set of conditions that cause a browser bug, by counterfactual replay.",
   "type": "module",
   "license": "MIT",

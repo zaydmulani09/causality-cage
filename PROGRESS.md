@@ -1,6 +1,6 @@
 # PROGRESS
 
-Current: DONE (M0-M8 gates passed). Nothing pushed.
+Current: DONE (M0-M8 gates passed). 0.1.2 prepared; pushed to origin main.
 
 ## Skills
 - /caveman ultra + /ponytail ultra loaded (found, both).
@@ -56,6 +56,13 @@ Current: DONE (M0-M8 gates passed). Nothing pushed.
 - Demo: scripts/record-demo.ts (real run, Playwright recordVideo + ffmpeg-static) → launch/demo.{gif,mp4,png}; launch/og.png from the report SVG (scripts/render-og.ts). CAGE_PROGRESS=1 forces the live line for recorders.
 - CLI version 0.1.1 built in dist-npm/, NOT published (npm 0.1.0 has the redaction leak).
 - Drafts: launch/show-hn.md, x-thread.md, reddit.md. Not posted.
+
+## 0.1.2: failure signatures (2026-09-29)
+- A run counts as FAIL only if its oracle reason matches the bad session failure signature (URLs, ids, hashes, numbers stripped; uncaught errors carry their type). Otherwise DIFFERENT_FAILURE. --loose-oracle restores any-failure.
+- Different failures are censored (left out of rates and SPRT). Gate needs >= 3 informative runs before judging, else SPRT. Found needed: B7 went untrustworthy-oracle when its 30% flake (a different crash) was counted as non-failure.
+- Real-world #187 with packed 0.1.2: default gives stale jwt AND /user AND /feed rejections (19 exp, 25.1 s); --loose-oracle gives {jwt} (10 exp, 16.9 s).
+- Bench: B6 declared looseOracle (its two causes crash with different messages; strict B6 = {header} only, 8 exp). Final bench 10/10, integration 7/7, selfcheck 4/4, unit 36.
+- Demo GIF/MP4/poster and og.png re-recorded with 0.1.2 output.
 
 ## Open issues
 - selfcheck seed 11 once stopped at the gate (2 experiments) while a heavy tsc run shared the CPU; 3 later runs of the same seed passed 4/4. Suspect experiment timeouts under CPU contention (latency factors are wall-clock). Not reproduced.

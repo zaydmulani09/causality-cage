@@ -88,7 +88,7 @@ export async function runFlow(input: RunInput): Promise<RunOutput> {
     page.on('console', (m) => {
       if (m.type() === 'error') consoleErrors.push(m.text());
     });
-    page.on('pageerror', (e) => pageErrors.push(e.message));
+    page.on('pageerror', (e) => pageErrors.push(`${e.name}: ${e.message}`));
 
     await page.route('**/*', async (route, request) => {
       if (request.url() === origin + SEED_PATH) return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>seed</title>' });

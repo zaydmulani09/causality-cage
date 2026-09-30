@@ -1,9 +1,10 @@
 # Tried on a real bug: react-redux-realworld-example-app #187
 
-**Result: cage found the documented cause (a stale JWT in localStorage) in 10 experiments and 14.9 s. With an
-oracle that only counts the exact error from the issue, it returned the full chain (stale JWT AND the two rejected
-requests) in 19 experiments and 19.8 s.** Setup of the 2018 app took 3 min 24 s. Run on 2026-09-29, Windows 11,
-Node 24.14, Chromium 148.
+**Result with `causality-cage@0.1.2` (the default, failure-signature matching): cage returned the full chain behind
+the documented cause, a stale JWT in localStorage AND the API rejecting the two requests that token triggers, in 19
+experiments and 25.1 s.** With `--loose-oracle` (any failure counts, the only behavior before 0.1.2) it named the
+stale `localStorage jwt` alone, in 10 experiments and 16.9 s. Setup of the 2018 app took 3 min 24 s. Run on
+2026-09-29, Windows 11, Node 24.14, Chromium 148.
 
 ## The project and the bug
 
@@ -35,10 +36,10 @@ node serve.mjs    # static server for app/build on http://127.0.0.1:4100
 
 The inputs are in [real-world/](real-world/): [`flow.ts`](real-world/flow.ts) (open the home page, wait for the
 network to go idle), [`stale-token.json`](real-world/stale-token.json) (initial state with a JWT-shaped token this API
-never issued, standing in for "a token from another backend"), [`same-error.ts`](real-world/same-error.ts) (the strict
-oracle), [`serve.mjs`](real-world/serve.mjs).
+never issued, standing in for "a token from another backend"), [`same-error.ts`](real-world/same-error.ts) (an oracle
+that only accepts the issue's error, used in the earlier runs below), [`serve.mjs`](real-world/serve.mjs).
 
-Recording used the published `causality-cage@0.1.0`; the explain runs below used the repository at the commits that fix the two bugs described further down:
+Recording (published `causality-cage@0.1.0`; the sessions are the same for every run below):
 
 ```text
 > cage record flow.ts --base-url http://127.0.0.1:4100 --out good.json --label good --fail-on-uncaught
@@ -50,49 +51,62 @@ oracle: FAIL (uncaught: Cannot read properties of undefined (reading 'tags'))
 ```
 
 The bad session made `GET /api/user` (401), `GET /api/tags` (200), `GET /api/articles/feed` (401). The good session
-made `GET /api/tags` (200), `GET /api/articles` (200). Same error as the issue, in V8's current wording ("Cannot read properties of undefined (reading 'tags')").
+made `GET /api/tags` (200), `GET /api/articles` (200). Same error as the issue, in V8's current wording ("Cannot read
+properties of undefined (reading 'tags')").
 
-## Raw output
+## Raw output, causality-cage 0.1.2
 
-Run 1, any uncaught error counts as the failure:
+Both runs used the packed 0.1.2 tarball (`npm pack` of `dist-npm/`, installed into a clean folder).
+
+Default (failure-signature matching):
 
 ```text
-> cage explain --flow flow.ts --fail-on-uncaught --bad bad.json --good good.json --out result.cage --no-open
-EXPLAINED  The failure ("uncaught: Cannot read properties of undefined (reading 'tags')") happens when localStorage jwt is "redacted-b40532944e". Restoring the passing value prevents it. Timing differences do not matter. (10 experiments.)
-  set 1 (SINGLE): storage localStorage jwt
-  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 4 factors; 10/500 experiments; 14.9 s
-  bundle result.cage, report result.html
-exit 0, wall 17 s
+> cage explain --flow flow.ts --fail-on-uncaught --bad bad.json --good good.json --out strict.cage --no-open
+EXPLAINED  The failure ("uncaught: TypeError: Cannot read properties of undefined (reading 'tags')") happens only when GET https://api.realworld.show/api/user gets its recorded response AND GET https://api.realworld.show/api/articles/feed?limit=10&offset=0 gets its recorded response AND localStorage jwt is "redacted-1d89dff6dd". Removing any one of them prevents it. Timing differences do not matter. (19 experiments.)
+  set 1 (AND): presence GET https://api.realworld.show/api/user  +  presence GET https://api.realworld.show/api/articles/feed?limit=10&offset=0  +  storage localStorage jwt
+  failure signature: uncaught: TypeError: Cannot read properties of undefined (reading 'tags')
+  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 4 factors; 19/500 experiments; 25.1 s
+  warning: Without presence GET https://api.realworld.show/api/user the page still fails, but with a different failure than the bad session's.
+  warning: Without presence GET https://api.realworld.show/api/articles/feed?limit=10&offset=0 the page still fails, but with a different failure than the bad session's.
+  bundle strict.cage, report strict.html
+exit 0, wall 27 s
 ```
 
-Run 2, only the error from the issue counts (`same-error.ts`):
+`--loose-oracle` (any uncaught error counts):
 
 ```text
-> cage explain --flow flow.ts --oracle same-error.ts --bad bad.json --good good.json --out result-same.cage --no-open
-EXPLAINED  The failure ("Cannot read properties of undefined (reading 'tags')") happens only when GET https://api.realworld.show/api/user gets its recorded response AND GET https://api.realworld.show/api/articles/feed?limit=10&offset=0 gets its recorded response AND localStorage jwt is "redacted-d045174b02". Removing any one of them prevents it. Timing differences do not matter. (19 experiments.)
-  set 1 (AND): presence GET https://api.realworld.show/api/user  +  presence GET https://api.realworld.show/api/articles/feed?limit=10&offset=0  +  storage localStorage jwt
-  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 4 factors; 19/500 experiments; 19.8 s
-  bundle result-same.cage, report result-same.html
-exit 0, wall 20 s
+> cage explain --flow flow.ts --fail-on-uncaught --loose-oracle --bad bad.json --good good.json --out loose.cage --no-open
+EXPLAINED  The failure ("uncaught: TypeError: Cannot read properties of undefined (reading 'tags')") happens when localStorage jwt is "redacted-e93af39605". Restoring the passing value prevents it. Timing differences do not matter. (10 experiments.)
+  set 1 (SINGLE): storage localStorage jwt
+  failure signature: not checked (--loose-oracle: any failure counts)
+  gate: all-observed failed 5/5, all-neutral failed 0/5; mode deterministic; 4 factors; 10/500 experiments; 16.9 s
+  bundle loose.cage, report loose.html
+exit 0, wall 18 s
 ```
 
 The 4 factors were: `storage localStorage jwt`, `presence GET /api/user`, `presence GET /api/articles/feed`, and
-`delay GET /api/tags` (110 ms vs 580 ms, irrelevant, correctly dropped).
+`delay GET /api/tags` (irrelevant, correctly dropped).
 
 ## Did it find the documented cause?
 
-Yes, with one caveat worth reading.
+Yes. The default run and the loose run both point at the stale token; they differ in how much of the mechanism they
+report, and the difference is exactly what failure-signature matching was added for.
 
-- Run 1 names the stale `localStorage.jwt` as the single cause, which is what the reporter found. Leave-one-out verification held (3/3 fail with it, 0/3 without it).
-- The caveat: in run 1's minimal configuration (only the jwt at its failing value), the two requests that only the failing run made are aborted rather than answered with 401, and the page throws `(reading 'body')` instead of `(reading 'tags')`. The oracle accepted any uncaught error, so this counted as the same failure. cage does not compare failure signatures; an oracle has to.
-- Run 2 uses an oracle that only accepts the issue's exact error. Then cage reports that the original crash needs the stale token AND the server rejecting both `/user` and `/feed`. That is the real mechanism: the token alone does nothing without a backend that rejects it.
+- **Default (0.1.2):** with only the jwt at its failing value, the two requests that only the failing run made are aborted instead of answered with 401, and the page throws `(reading 'body')`, not `(reading 'tags')`. That no longer counts as reproducing the bug; it is a `DIFFERENT_FAILURE`. So cage keeps looking and reports what the original crash actually needs: the stale token AND the server rejecting both `/user` and `/feed`. The token alone does nothing without a backend that rejects it. The two warnings say that removing either presence factor still breaks the page, only differently.
+- **`--loose-oracle`:** any uncaught error counts, so the `(reading 'body')` crash counts too, and the minimal set is `{localStorage jwt}`. This is what 0.1.0 and 0.1.1 always did.
+- Leave-one-out verification held in both runs. Neither bundle contains any part of the token (checked all 12 files of each).
 
-## Two tool bugs this run exposed, fixed generally
+## History: runs before signature matching
 
-1. **Redaction leak.** The verdict sentence quotes factor values truncated to 40 characters. A truncated secret was not caught by the final sweep, so the first 40 characters of the JWT reached `result.json` and `report.html` in `causality-cage@0.1.0`. Fixed by rebuilding the sentence from the redacted factors (commit "fix: rebuild verdict sentence from redacted factors", with a regression test that fails on the old code). The rerun bundle was checked: none of its 12 files contains any part of the token. The published 0.1.0 still has this bug until a new version is published.
+Before 0.1.2 the same case gave `{localStorage jwt}` with `--fail-on-uncaught` (10 experiments, 14.9 s), and the full
+chain only with the hand-written [`same-error.ts`](real-world/same-error.ts) oracle (19 experiments, 19.8 s). That
+gap is why 0.1.2 makes signature matching the default.
+
+## Tool bugs this case exposed, fixed generally
+
+1. **Redaction leak.** The verdict sentence quoted factor values truncated to 40 characters, and a truncated secret slipped past the final sweep, so the first 40 characters of the JWT reached `result.json` and `report.html` in `causality-cage@0.1.0`. Fixed by rebuilding the sentence from the redacted factors, with a regression test that fails on the old code. 0.1.0 on npm still has this bug until a newer version is published.
 2. **Wording.** The sentence said a presence factor "is requested"; the request happens either way, and the factor decides whether the recorded response is delivered. Now "gets its recorded response" / "fails at the network level".
-
-The benchmark was re-run after both fixes (see README).
+3. **No notion of "the same failure".** A minimal configuration could fail with a different error and still count. 0.1.2 adds failure signatures (see [docs/limits.md](../docs/limits.md)).
 
 ## Time
 
@@ -102,5 +116,5 @@ The benchmark was re-run after both fixes (see README).
 | npm install | 71 s |
 | production build | 2 min 2 s |
 | record good + bad | 9 s |
-| cage explain, run 1 | 14.9 s (17 s wall) |
-| cage explain, run 2 | 19.8 s (20 s wall) |
+| cage explain 0.1.2, default | 25.1 s (27 s wall) |
+| cage explain 0.1.2, `--loose-oracle` | 16.9 s (18 s wall) |

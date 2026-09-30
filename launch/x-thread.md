@@ -10,11 +10,11 @@ You give it a failing run and a passing run. It replays the flow in Chromium, sw
 
 **3/**
 
-Tried it on a real closed issue in the RealWorld React app (#187): a crash reading 'tags' of undefined that the reporter traced to a stale token in localStorage. cage named localStorage jwt as the cause in 10 experiments, 14.9 s.
+Tried it on a real closed issue in the RealWorld React app (#187): a crash reading 'tags' of undefined that the reporter traced to a stale token in localStorage. cage came back with the whole chain in 19 experiments, 25.1 s: stale token AND the API rejecting the two requests it triggers.
 
 **4/**
 
-The honest caveat from that run: its minimal config failed with a slightly different error, because the tool does not compare failure signatures. With an oracle that only accepts the exact error, it returned the full chain instead: stale token AND the API rejecting two requests. Written up with raw output.
+That answer exists because the first version got it slightly wrong: it said "the token" alone, since its minimal config crashed with a different error and any crash counted. Now it fingerprints the original failure and a different crash is reported as a different failure. Written up with raw output.
 
 **5/**
 

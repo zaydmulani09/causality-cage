@@ -19,7 +19,7 @@
       o.setAttribute('class', `outcome ${cls}`);
       o.setAttribute('data-decision', d);
       const t = o.querySelector('.outcome-text');
-      if (t) t.textContent = d === 'FAIL' ? 'FAILURE' : d === 'PASS' ? 'NO FAILURE' : d;
+      if (t) t.textContent = d === 'FAIL' ? 'FAILURE' : d === 'PASS' ? 'NO FAILURE' : d === 'DIFFERENT_FAILURE' ? 'OTHER FAILURE' : d;
     }
     for (const f of data.factors) {
       const obs = on.has(f.id);

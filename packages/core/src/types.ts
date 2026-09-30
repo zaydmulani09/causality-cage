@@ -125,7 +125,8 @@ export interface Configuration {
   overrides?: Record<string, FactorValue>;
 }
 
-export type Decision = 'FAIL' | 'PASS' | 'ERROR' | 'UNRESOLVED';
+/** DIFFERENT_FAILURE: the run failed, but not with the bad session's failure signature. Never counts as reproducing. */
+export type Decision = 'FAIL' | 'PASS' | 'ERROR' | 'UNRESOLVED' | 'DIFFERENT_FAILURE';
 
 export type Phase = 'gate' | 'search' | 'verify' | 'table' | 'variant' | 'delay';
 
@@ -139,6 +140,10 @@ export interface ExperimentRecord {
   runs: number;
   fails: number;
   errors: number;
+  /** failing runs whose signature differs from the target */
+  different?: number;
+  /** failing runs per normalized failure signature */
+  failureSignatures?: Record<string, number>;
   decision: Decision;
   wallMs: number;
   seqHashes: string[];
@@ -148,9 +153,10 @@ export interface ExperimentRecord {
 export type Verdict = 'explained' | 'partial' | 'unexplained' | 'untrustworthy-oracle';
 export type Structure = 'SINGLE' | 'AND' | 'OR' | 'OTHER';
 
+/** runs = informative runs (no infrastructure error, no different failure); different = runs that failed differently */
 export interface GateRates {
-  allTrue: { runs: number; fails: number };
-  allFalse: { runs: number; fails: number };
+  allTrue: { runs: number; fails: number; different?: number };
+  allFalse: { runs: number; fails: number; different?: number };
 }
 
 export interface TruthRow {
@@ -191,6 +197,9 @@ export interface Result {
   sentence: string;
   mode: 'deterministic' | 'statistical';
   singleSession: boolean;
+  /** normalized signature of the bad session's failure; only runs matching it count as FAIL (null = any failure) */
+  signature: string | null;
+  looseOracle: boolean;
   gate: GateRates;
   factorCount: number;
   minimalSets: string[][];

@@ -230,12 +230,23 @@
         "errors": {
           "type": "number"
         },
+        "different": {
+          "type": "number"
+        },
+        "failureSignatures": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
         "decision": {
           "enum": [
             "FAIL",
             "PASS",
             "ERROR",
-            "UNRESOLVED"
+            "UNRESOLVED",
+            "DIFFERENT_FAILURE"
           ]
         },
         "wallMs": {
@@ -360,6 +371,9 @@
             },
             "fails": {
               "type": "number"
+            },
+            "different": {
+              "type": "number"
             }
           },
           "additionalProperties": false,
@@ -375,6 +389,9 @@
               "type": "number"
             },
             "fails": {
+              "type": "number"
+            },
+            "different": {
               "type": "number"
             }
           },
@@ -563,6 +580,19 @@
         "singleSession": {
           "type": "boolean"
         },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "looseOracle": {
+          "type": "boolean"
+        },
         "gate": {
           "$ref": "#/definitions/GateRates"
         },
@@ -677,6 +707,8 @@
         "sentence",
         "mode",
         "singleSession",
+        "signature",
+        "looseOracle",
         "gate",
         "factorCount",
         "minimalSets",
@@ -810,7 +842,8 @@
             "FAIL",
             "PASS",
             "ERROR",
-            "UNRESOLVED"
+            "UNRESOLVED",
+            "DIFFERENT_FAILURE"
           ]
         },
         "runs": {
@@ -843,7 +876,8 @@
             "FAIL",
             "PASS",
             "ERROR",
-            "UNRESOLVED"
+            "UNRESOLVED",
+            "DIFFERENT_FAILURE"
           ]
         }
       },

@@ -1,7 +1,7 @@
 // Delta debugging (Zeller & Hildebrandt 2002, ddmin) and hierarchical DD (Misherghi & Su 2006). Pure: I/O lives in `test`.
-import type { FactorNode } from './types.ts';
+import type { Decision, FactorNode } from './types.ts';
 
-export type Outcome = 'FAIL' | 'PASS' | 'ERROR' | 'UNRESOLVED';
+export type Outcome = Decision;
 export type TestFn<T> = (subset: T[]) => Promise<Outcome>;
 
 /** n near-equal contiguous chunks. */
@@ -34,7 +34,7 @@ async function firstFail<T>(cands: T[][], test: TestFn<T>, width: number): Promi
 /**
  * ddmin with complement testing. Precondition: test(items) FAILs and test([]) does not.
  * Returns a 1-minimal failing subset: removing any single element no longer FAILs.
- * Anything that is not FAIL (PASS, ERROR, UNRESOLVED) counts as "does not fail".
+ * Anything that is not FAIL (PASS, ERROR, UNRESOLVED, DIFFERENT_FAILURE) counts as "does not fail".
  */
 export async function ddmin<T>(items: T[], test: TestFn<T>, width = 1): Promise<T[]> {
   let c = items;

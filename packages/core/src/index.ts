@@ -17,3 +17,4 @@ export * from './schema.ts';
 export * from './export.ts';
 export * from './bundle.ts';
 export * from './synthesize.ts';
+export * from './signature.ts';

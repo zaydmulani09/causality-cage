@@ -71,7 +71,8 @@ function verdict(b: Bundle): string {
 <div><dt>experiments</dt><dd>${r.budget.used} / ${r.budget.limit}</dd></div>
 <div><dt>mode</dt><dd>${r.mode}</dd></div>
 <div><dt>wall time</dt><dd>${(r.wallMs / 1000).toFixed(1)} s</dd></div>
-</dl>${sets}
+</dl>
+<p class="signature"><span class="muted">failure signature:</span> ${r.looseOracle ? '<span class="muted">not checked (--loose-oracle: any failure counts)</span>' : r.signature ? `<code>${esc(r.signature)}</code>` : '<span class="muted">none</span>'}</p>${sets}
 ${r.warnings.map((w) => `<p class="warn">${esc(w)}</p>`).join('')}
 </section>`;
 }
@@ -178,7 +179,7 @@ function variants(b: Bundle): string {
   if (!r.variants.length) return '';
   const byId = new Map(b.factors.map((f) => [f.id, f]));
   const rows = r.variants
-    .map((v) => `<tr><td><code>${esc(byId.get(v.factor)?.label ?? v.factor)}</code></td><td>${esc(v.cls)}</td><td><code>${esc(fmtVal(v.value))}</code></td><td><span class="badge ${v.decision}">${v.decision === 'FAIL' ? 'reproduces' : v.decision === 'PASS' ? 'no failure' : v.decision.toLowerCase()}</span></td></tr>`)
+    .map((v) => `<tr><td><code>${esc(byId.get(v.factor)?.label ?? v.factor)}</code></td><td>${esc(v.cls)}</td><td><code>${esc(fmtVal(v.value))}</code></td><td><span class="badge ${v.decision}">${v.decision === 'FAIL' ? 'reproduces' : v.decision === 'PASS' ? 'no failure' : v.decision === 'DIFFERENT_FAILURE' ? 'different failure' : v.decision.toLowerCase()}</span></td></tr>`)
     .join('');
   const ids = [...new Set(r.variants.map((v) => v.factor))];
   const summary = ids
@@ -224,7 +225,8 @@ function scope(b: Bundle): string {
 <p>Modeled: API response body fields, status codes, allow-listed response headers, response latency, arrival order of concurrent responses, requests present only in the failing run, localStorage, sessionStorage, cookies, viewport, locale, timezone, user agent.</p>
 <p>Not modeled (a cause here shows up as <em>unexplained</em>): server-side state not visible in API responses; static assets and third-party scripts (served live); WebSockets and WebRTC; IndexedDB; service workers (blocked during replay); multi-tab flows; non-Chromium browsers.</p>
 <ul>
-<li>Determinism gate: all-observed failed ${g.allTrue.fails}/${g.allTrue.runs} runs, all-neutral failed ${g.allFalse.fails}/${g.allFalse.runs} (needs ≥ 80% and ≤ 20%).</li>
+<li>${r.looseOracle ? 'Oracle: loose, any failure counted as the bug.' : `Only runs whose failure matches the bad session's signature count as reproducing it; other failures are DIFFERENT_FAILURE.`}</li>
+<li>Determinism gate: all-observed failed ${g.allTrue.fails}/${g.allTrue.runs} runs, all-neutral failed ${g.allFalse.fails}/${g.allFalse.runs} (needs ≥ 80% and ≤ 20%).${g.allTrue.different || g.allFalse.different ? ` Runs that failed differently are left out of these rates (all-observed ${g.allTrue.different ?? 0}, all-neutral ${g.allFalse.different ?? 0}): another failure came first, so they say nothing about this one.` : ''}</li>
 <li>Mode: ${r.mode}${r.mode === 'statistical' ? ' (each experiment repeated until a sequential probability ratio test decided, 0.2 vs 0.8 fail rate, α = β = 0.05, max 12 runs)' : ' (one run per experiment; leave-one-out checks repeated 3 times)'}.</li>
 <li>Budget: ${r.budget.used} of ${r.budget.limit} experiments used.${r.verdict === 'partial' ? ' <strong>Search stopped early: result not verified.</strong>' : ''}</li>
 ${r.singleSession ? '<li><strong>Single-session mode (experimental):</strong> neutral values were synthesized, not observed in a passing run.</li>' : ''}

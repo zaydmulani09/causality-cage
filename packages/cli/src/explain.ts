@@ -28,6 +28,8 @@ Options:
   --allow-unmatched <glob>  unrecorded requests matching glob go to the network (repeatable)
   --freeze-random           seed Math.random
   --freeze-time             start the page clock at a fixed time (virtual Date; interacts with delay factors)
+  --loose-oracle            count any failure; by default only runs that fail like the bad session count (same
+                            normalized error signature), and other failures are reported as DIFFERENT_FAILURE
   --json                    print the result as JSON
   --debug                   stack traces on errors
 
@@ -45,7 +47,7 @@ export const EXIT: Record<Result['verdict'], number> = { explained: 0, partial: 
 // CAGE_PROGRESS=1 forces the live line and colors when stdout is not a TTY (terminal recorders, CI logs).
 const tty = process.stdout.isTTY || process.env.CAGE_PROGRESS === '1';
 const color = (c: number, s: string) => (tty ? `\x1b[${c}m${s}\x1b[0m` : s);
-const DOT: Record<string, string> = { FAIL: color(31, '●'), PASS: color(32, '○'), ERROR: color(33, 'x'), UNRESOLVED: color(33, '?') };
+const DOT: Record<string, string> = { FAIL: color(31, '●'), PASS: color(32, '○'), ERROR: color(33, 'x'), UNRESOLVED: color(33, '?'), DIFFERENT_FAILURE: color(35, '◆') };
 
 export async function explainCmd(argv: string[]): Promise<number> {
   const a = parse(
@@ -67,6 +69,7 @@ export async function explainCmd(argv: string[]): Promise<number> {
       'allow-unmatched': { type: 'string', multiple: true },
       'freeze-random': { type: 'boolean' },
       'freeze-time': { type: 'boolean' },
+      'loose-oracle': { type: 'boolean' },
       json: { type: 'boolean' },
       ...ORACLE_OPTIONS,
     },
@@ -106,6 +109,7 @@ export async function explainCmd(argv: string[]): Promise<number> {
       allowUnmatched: v['allow-unmatched'] ?? [],
       freezeRandom: !!v['freeze-random'],
       freezeTime: !!v['freeze-time'],
+      looseOracle: !!v['loose-oracle'],
       onRecord: (rec: ExperimentRecord) => {
         count++;
         recent.push(DOT[rec.decision]!);
@@ -164,7 +168,9 @@ function printSummary(r: Result, factors: { id: string; label: string }[]) {
   const head = { explained: color(32, 'EXPLAINED'), partial: color(33, 'PARTIAL'), unexplained: color(33, 'UNEXPLAINED'), 'untrustworthy-oracle': color(31, 'UNTRUSTWORTHY ORACLE') }[r.verdict];
   console.log(`${head}  ${r.sentence}`);
   for (const [i, s] of r.minimalSets.entries()) console.log(`  set ${i + 1}${r.structure ? ` (${r.structure})` : ''}: ${s.map((id) => label.get(id)).join('  +  ')}`);
-  console.log(`  gate: all-observed failed ${r.gate.allTrue.fails}/${r.gate.allTrue.runs}, all-neutral failed ${r.gate.allFalse.fails}/${r.gate.allFalse.runs}; mode ${r.mode}; ${r.factorCount} factors; ${r.budget.used}/${r.budget.limit} experiments; ${(r.wallMs / 1000).toFixed(1)} s`);
+  console.log(r.looseOracle ? '  failure signature: not checked (--loose-oracle: any failure counts)' : `  failure signature: ${r.signature ?? '(none: the bad session did not fail)'}`);
+  const diff = (g: { different?: number }) => (g.different ? ` (+${g.different} failed differently)` : '');
+  console.log(`  gate: all-observed failed ${r.gate.allTrue.fails}/${r.gate.allTrue.runs}${diff(r.gate.allTrue)}, all-neutral failed ${r.gate.allFalse.fails}/${r.gate.allFalse.runs}${diff(r.gate.allFalse)}; mode ${r.mode}; ${r.factorCount} factors; ${r.budget.used}/${r.budget.limit} experiments; ${(r.wallMs / 1000).toFixed(1)} s`);
   for (const w of r.warnings) console.log(color(33, `  warning: ${w}`));
   if (r.verdict === 'partial') console.log(color(33, '  PARTIAL RESULT: not verified. Raise --budget or narrow the diff.'));
 }

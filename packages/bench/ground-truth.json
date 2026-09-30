@@ -37,8 +37,9 @@
   },
   {
     "id": "B6",
-    "tests": "OR structure",
-    "defect": "crash if cookie locale = tr-TR, or if /api/cart header x-region = eu (either alone)",
+    "tests": "OR structure (loose oracle)",
+    "defect": "crash if cookie locale = tr-TR, or if /api/cart header x-region = eu (either alone); the two crash with different messages, and the case counts any crash, so it runs with --loose-oracle",
+    "looseOracle": true,
     "oracle": { "file": "examples/oracles/no-crash.ts" },
     "states": { "bad": { "cookies": [{ "name": "locale", "value": "tr-TR" }] }, "good": { "cookies": [{ "name": "locale", "value": "en-US" }] } },
     "expect": { "verdict": "explained", "sets": [["cookie locale"], ["header GET /api/cart x-region"]] }

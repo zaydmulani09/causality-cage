@@ -58,7 +58,8 @@ function oracleFor(sets: Leaf[][], good: Session): OracleFn {
       }
     };
     const hit = sets.find((s) => s.every(served));
-    return hit ? { failed: true, reason: `synthetic fault: ${hit.map((l) => l.label).join(' + ')}` } : { failed: false };
+    // one fault, one message: which hidden set triggered it is not part of the signature
+    return hit ? { failed: true, reason: 'synthetic fault' } : { failed: false };
   };
 }
 

@@ -108,7 +108,8 @@ tr:last-child td { border-bottom: 0; }
 .badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .badge.FAIL { color: var(--fail); background: var(--fail-bg); }
 .badge.PASS { color: var(--pass); background: var(--pass-bg); }
-.badge.ERROR, .badge.UNRESOLVED { color: var(--warn); background: var(--warn-bg); }
+.badge.ERROR, .badge.UNRESOLVED, .badge.DIFFERENT_FAILURE { color: var(--warn); background: var(--warn-bg); }
+.signature { margin: 10px 0 0; font-size: 13px; }
 input[type='search'] { width: 100%; max-width: 360px; padding: 7px 10px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--fg); font: inherit; }
 .scope { border: 1px solid var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 16px; }
 .scope h2 { color: var(--warn); }
